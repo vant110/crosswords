@@ -1,0 +1,1 @@
+dotnet ef dbcontext scaffold "Host=localhost;Port=5432;Database=crosswords;Username=postgres;Password=0925Os54Ov123" Npgsql.EntityFrameworkCore.PostgreSQL --context-dir Db --output-dir Db\Models --context-namespace Crosswords.Db --namespace Crosswords.Db.Models --force
