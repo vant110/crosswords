@@ -1,32 +1,45 @@
 using Crosswords.Db;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services
     .AddDbContextPool<CrosswordsContext>(options => options
         //.EnableThreadSafetyChecks(false)
         .UseQueryTrackingBehavior(QueryTrackingBehavior.NoTracking)
-        .UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+        .UseNpgsql(
+            new NpgsqlConnectionStringBuilder(
+                builder.Configuration.GetConnectionString("DefaultConnection"))
+            { 
+                Password = builder.Configuration["DbPassword"]
+            }
+            .ConnectionString));
 var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 
 
-app.MapGet("/test", async (
-    CrosswordsContext db) =>
+if (app.Environment.IsDevelopment())
 {
-    try
+    app.MapGet("/test", async (
+        CrosswordsContext db) =>
     {
-        return Results.Json(await db.Themes
-            .Select(t => t)
-            .ToListAsync());
-    }
-    catch (Exception ex)
-    {
-        app.Logger.LogError(ex.ToString());
-        return Results.Problem(ex.ToString());
-    }
-});
+        try
+        {
+            return Results.Json(await db.Themes
+                .Select(t => t)
+                .ToListAsync());
+        }
+        catch (Exception ex)
+        {
+            app.Logger.LogError(ex.ToString());
+            return Results.Problem(ex.ToString());
+        }
+    });
+}
+
+
+
 
 
 app.Run();
