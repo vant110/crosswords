@@ -19,12 +19,10 @@ builder.Services
             new NpgsqlConnectionStringBuilder(
                 builder.Configuration["Db:ConnectionString"])
             {
-                IncludeErrorDetail = true,
+                //IncludeErrorDetail = true,
                 Password = builder.Configuration["Db:Password"]
             }
             .ConnectionString))
-    .AddScoped<DbService>()
-    .AddScoped<PasswordHasher<Player>>()
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         .AddJwtBearer(options => options
             .TokenValidationParameters = new TokenValidationParameters
@@ -40,7 +38,10 @@ builder.Services
                 ValidateIssuerSigningKey = true,
             })
         .Services
-    .AddAuthorization();
+    .AddAuthorization()
+    .AddScoped<PasswordHasher<Player>>()
+    .AddScoped<ValidationService>()
+    .AddScoped<DbService>();
 var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -161,7 +162,7 @@ app.MapPost("api/auth/signin", async (
 
 #region Администратор - Словари
 
-app.MapGet("api/dictionaries", async (
+app.MapGet("api/dictionaries", [Authorize(Roles = "admin")] async (
     CrosswordsContext db) =>
 {
     return Results.Json(await db.Dictionaries
@@ -173,21 +174,35 @@ app.MapGet("api/dictionaries", async (
         .ToListAsync());
 });
 
-app.MapPost("api/dictionaries", async (
+app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     HttpRequest request,
-    DbService dbService) =>
+    DbService dbService,
+    CrosswordsContext db) =>
 {
     try
     {
         string name = request.Form["name"];
+        var dictionaryFile = request.Form.Files["dictionary"];
 
-        var id = await dbService.InsertDictionaryAsync(name);
+        var id = await dbService.InsertDictionaryAsync(name, dictionaryFile);
 
         return Results.Json(new { id }, statusCode: 201);
     }
-    catch (DbUpdateException)
+    catch (ArgumentException ex)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { ex.Message });
+    }
+    catch (DbUpdateException ex)
+    {
+        string constraintName = (ex.InnerException as PostgresException).ConstraintName ?? "";
+
+        string message = db.Dictionaries.EntityType.FindIndex(constraintName) is not null
+            ? "Название занято"
+            : db.Words.EntityType.FindIndex(constraintName) is not null
+                ? "Слова неуникальны"
+                : ex.Message;
+
+        return Results.BadRequest(new { message });
     }
     catch (Exception ex)
     {
