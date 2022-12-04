@@ -210,6 +210,29 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     }
 });
 
+app.MapPatch("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+
+        await dbService.UpdateDictionaryAsync(id, name);
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Название занято" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 #endregion
 
 app.MapGet("api/user", [Authorize] () => "User");

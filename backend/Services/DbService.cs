@@ -85,6 +85,17 @@ namespace Crosswords.Services
             return dictionary.DictionaryId;
         }
 
+        public async Task UpdateDictionaryAsync(short id, string name)
+        {
+            var dictionary = new Dictionary()
+            {
+                DictionaryId = id
+            };
+            _db.Dictionaries.Attach(dictionary);
+            dictionary.DictionaryName = name;
+            await _db.SaveChangesAsync();
+        }
+
         #endregion
 
     }
