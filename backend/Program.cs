@@ -159,6 +159,22 @@ app.MapPost("api/auth/signin", async (
 
 #endregion
 
+#region Администратор - Словари
+
+app.MapGet("api/dictionaries", async (
+    CrosswordsContext db) =>
+{
+    return Results.Json(await db.Dictionaries
+        .Select(d => new
+        {
+            id = d.DictionaryId,
+            name = d.DictionaryName
+        })
+        .ToListAsync());
+});
+
+#endregion
+
 app.MapGet("api/user", [Authorize] () => "User");
 app.MapGet("api/admin", [Authorize(Roles = "admin")] () => "Admin");
 app.MapGet("api/player", [Authorize(Roles = "player")] () => "Player");
