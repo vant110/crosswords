@@ -9,7 +9,7 @@ public partial class Player
 
     public string Login { get; set; } = null!;
 
-    public byte[] PasswordHash { get; set; } = null!;
+    public string PasswordHash { get; set; } = null!;
 
     public virtual ICollection<Save> Saves { get; } = new List<Save>();
 
