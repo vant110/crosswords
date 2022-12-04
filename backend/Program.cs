@@ -223,9 +223,37 @@ app.MapPatch("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 
         return Results.NoContent();
     }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Словарь не найден" });
+    }
     catch (DbUpdateException)
     {
         return Results.BadRequest(new { message = "Название занято" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        db.Dictionaries.Remove(new Dictionary
+        {
+            DictionaryId = id
+        });
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Словарь не найден" });
     }
     catch (Exception ex)
     {
