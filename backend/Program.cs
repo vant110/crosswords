@@ -65,7 +65,7 @@ app.MapPost("api/auth/signup", async (
         string password = request.Form["password"];
         string passwordHash = passwordHasher.HashPassword(null, password);
 
-        int playerId = await dbService.InsertPlayerAsync(login, passwordHash);
+        var playerId = await dbService.InsertPlayerAsync(login, passwordHash);
 
         var jwt = new JwtSecurityToken(
             claims: new List<Claim>
@@ -171,6 +171,28 @@ app.MapGet("api/dictionaries", async (
             name = d.DictionaryName
         })
         .ToListAsync());
+});
+
+app.MapPost("api/dictionaries", async (
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+
+        var id = await dbService.InsertDictionaryAsync(name);
+
+        return Results.Json(new { id }, statusCode: 201);
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Название занято" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
 });
 
 #endregion

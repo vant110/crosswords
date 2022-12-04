@@ -17,6 +17,8 @@ namespace Crosswords.Services
             _db = db;
         }
 
+        #region Пользователь
+
         public async Task<int> InsertPlayerAsync(string login, string passwordHash)
         {
             var player = new Player
@@ -37,6 +39,25 @@ namespace Crosswords.Services
                 .Where(p => p.Login == login)
                 .SingleOrDefaultAsync();
         }
+
+        #endregion
+
+        #region Администратор - Словари
+
+        public async Task<short> InsertDictionaryAsync(string name)
+        {
+            var dictionary = new Dictionary
+            {
+                DictionaryName = name
+            };
+
+            _db.Dictionaries.Add(dictionary);
+            await _db.SaveChangesAsync();
+
+            return dictionary.DictionaryId;
+        }
+
+        #endregion
 
     }
 }
