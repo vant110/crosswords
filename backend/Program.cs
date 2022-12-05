@@ -41,12 +41,14 @@ builder.Services
     .AddAuthorization()
     .AddScoped<PasswordHasher<Player>>()
     .AddScoped<ValidationService>()
-    .AddScoped<DbService>();
+    .AddScoped<DbService>()
+    .AddCors();
 var app = builder.Build();
 app.UseDefaultFiles();
 app.UseStaticFiles();
 app.UseAuthentication();
 app.UseAuthorization();
+app.UseCors(builder => builder.AllowAnyOrigin());
 
 #region Пользователь
 
