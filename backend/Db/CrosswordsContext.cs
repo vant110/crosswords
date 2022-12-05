@@ -39,9 +39,7 @@ public partial class CrosswordsContext : DbContext
             entity.HasIndex(e => e.CrosswordName, "crosswords_crossword_name_key").IsUnique();
 
             entity.Property(e => e.CrosswordId).HasColumnName("crossword_id");
-            entity.Property(e => e.CrosswordName)
-                .HasMaxLength(30)
-                .HasColumnName("crossword_name");
+            entity.Property(e => e.CrosswordName).HasColumnName("crossword_name");
             entity.Property(e => e.DictionaryId).HasColumnName("dictionary_id");
             entity.Property(e => e.HorizontalSize).HasColumnName("horizontal_size");
             entity.Property(e => e.PromptCount).HasColumnName("prompt_count");
@@ -91,9 +89,7 @@ public partial class CrosswordsContext : DbContext
             entity.HasIndex(e => e.DictionaryName, "dictionaries_dictionary_name_key").IsUnique();
 
             entity.Property(e => e.DictionaryId).HasColumnName("dictionary_id");
-            entity.Property(e => e.DictionaryName)
-                .HasMaxLength(30)
-                .HasColumnName("dictionary_name");
+            entity.Property(e => e.DictionaryName).HasColumnName("dictionary_name");
         });
 
         modelBuilder.Entity<Letter>(entity =>
@@ -107,7 +103,7 @@ public partial class CrosswordsContext : DbContext
             entity.Property(e => e.X).HasColumnName("x");
             entity.Property(e => e.Y).HasColumnName("y");
             entity.Property(e => e.LetterName)
-                .HasMaxLength(1)
+                .HasColumnType("char")
                 .HasColumnName("letter_name");
 
             entity.HasOne(d => d.Save).WithMany(p => p.Letters)
@@ -124,9 +120,7 @@ public partial class CrosswordsContext : DbContext
             entity.HasIndex(e => e.Login, "players_login_key").IsUnique();
 
             entity.Property(e => e.PlayerId).HasColumnName("player_id");
-            entity.Property(e => e.Login)
-                .HasMaxLength(10)
-                .HasColumnName("login");
+            entity.Property(e => e.Login).HasColumnName("login");
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
 
             entity.HasMany(d => d.Crosswords).WithMany(p => p.Players)
@@ -173,9 +167,7 @@ public partial class CrosswordsContext : DbContext
             entity.HasIndex(e => e.ThemeName, "themes_theme_name_key").IsUnique();
 
             entity.Property(e => e.ThemeId).HasColumnName("theme_id");
-            entity.Property(e => e.ThemeName)
-                .HasMaxLength(30)
-                .HasColumnName("theme_name");
+            entity.Property(e => e.ThemeName).HasColumnName("theme_name");
         });
 
         modelBuilder.Entity<Word>(entity =>
@@ -187,13 +179,9 @@ public partial class CrosswordsContext : DbContext
             entity.HasIndex(e => new { e.DictionaryId, e.WordName }, "words_dictionary_id_word_name_key").IsUnique();
 
             entity.Property(e => e.WordId).HasColumnName("word_id");
-            entity.Property(e => e.Definition)
-                .HasMaxLength(200)
-                .HasColumnName("definition");
+            entity.Property(e => e.Definition).HasColumnName("definition");
             entity.Property(e => e.DictionaryId).HasColumnName("dictionary_id");
-            entity.Property(e => e.WordName)
-                .HasMaxLength(15)
-                .HasColumnName("word_name");
+            entity.Property(e => e.WordName).HasColumnName("word_name");
 
             entity.HasOne(d => d.Dictionary).WithMany(p => p.Words)
                 .HasForeignKey(d => d.DictionaryId)
