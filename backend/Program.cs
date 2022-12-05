@@ -263,6 +263,69 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
+#region Администратор - Слова словаря
+
+app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
+    short dictionaryId,
+    string? search,
+    string sort,
+    string? lastName,
+    int limit,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        var words = db.Words
+            .Where(w => w.DictionaryId == dictionaryId);
+
+        if (search is not null)
+        {
+            search = search.ToUpperInvariant();
+
+            words = words.Where(w => w.WordName.Contains(search));
+        }
+
+        words = sort switch
+        {
+            "ascAlphabet" => words.OrderBy(w => w.WordName),
+            "descAlphabet" => words.OrderByDescending(w => w.WordName),
+            "ascLength" => words.OrderBy(w => w.WordName.Length).ThenBy(w => w.WordName),
+            "descLength" => words.OrderByDescending(w => w.WordName.Length).ThenBy(w => w.WordName),
+            _ => throw new NotImplementedException()
+        };
+
+        if (lastName is not null)
+        {
+            lastName = lastName.ToUpperInvariant();
+
+            words = sort switch
+            {
+                "ascAlphabet" => words.Where(w => w.WordName.CompareTo(lastName) > 0),
+                "descAlphabet" => words.Where(w => w.WordName.CompareTo(lastName) < 0),
+                "ascLength" => words.Where(w => w.WordName.Length == lastName.Length && w.WordName.CompareTo(lastName) > 0 || w.WordName.Length > lastName.Length),
+                "descLength" => words.Where(w => w.WordName.Length == lastName.Length && w.WordName.CompareTo(lastName) > 0 || w.WordName.Length < lastName.Length),
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        return Results.Json(await words
+            .Take(limit)
+            .Select(w => new
+            {
+                id = w.WordId,
+                name = w.WordName,
+                definition = w.Definition
+            })
+            .ToListAsync());
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+#endregion
+
 app.MapGet("api/user", [Authorize] () => "User");
 app.MapGet("api/admin", [Authorize(Roles = "admin")] () => "Admin");
 app.MapGet("api/player", [Authorize(Roles = "player")] () => "Player");

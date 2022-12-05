@@ -4,7 +4,7 @@ namespace Crosswords.Services
 {
     public partial class ValidationService
     {
-        [GeneratedRegex("^[а-яА-Я]+$")]
+        [GeneratedRegex("^[А-Я]+$")]
         private static partial Regex WordNameRegex();
 
 

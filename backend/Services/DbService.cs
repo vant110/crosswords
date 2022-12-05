@@ -64,7 +64,7 @@ namespace Crosswords.Services
                 {
                     int separatorIndex = line.IndexOf(' ');
 
-                    string wordName = line[..separatorIndex];
+                    string wordName = line[..separatorIndex].ToUpperInvariant();
                     if (!_validationService.IsFileWordName(wordName, lineNumber, out string? message))
                         throw new ArgumentException(message);
 
