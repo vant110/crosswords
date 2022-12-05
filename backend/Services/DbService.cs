@@ -98,5 +98,32 @@ namespace Crosswords.Services
 
         #endregion
 
+        #region Администратор - Слова словаря
+
+        public async Task<int> InsertWordAsync(short dictionaryId, string name, string definition)
+        {
+            name = name.ToUpperInvariant();
+
+            if (!_validationService.IsWordName(name, out string? message))
+                throw new ArgumentException(message);
+
+            if (!_validationService.IsDefinition(definition, out message))
+                throw new ArgumentException(message);
+
+            var word = new Word()
+            {
+                DictionaryId = dictionaryId,
+                WordName = name,
+                Definition = definition
+            };
+
+            _db.Words.Add(word);
+            await _db.SaveChangesAsync();
+
+            return word.WordId;
+        }
+
+        #endregion
+
     }
 }

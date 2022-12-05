@@ -324,6 +324,40 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
     }
 });
 
+app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
+    short dictionaryId,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+        string definition = request.Form["definition"];
+
+        var id = await dbService.InsertWordAsync(dictionaryId, name, definition);
+
+        return Results.Json(new { id }, statusCode: 201);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { ex.Message });
+    }
+    catch (DbUpdateException ex)
+    {
+        string message = (ex.InnerException as PostgresException).SqlState switch
+        {
+            "23503" => "Словарь не найден",
+            "23505" => "Название занято"
+        };
+
+        return Results.BadRequest(new { message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 #endregion
 
 app.MapGet("api/user", [Authorize] () => "User");
