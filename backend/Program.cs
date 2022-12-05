@@ -188,7 +188,7 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
 
         var id = await dbService.InsertDictionaryAsync(name, dictionaryFile);
 
-        return Results.Json(new { id }, statusCode: 201);
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
     catch (ArgumentException ex)
     {
@@ -256,6 +256,154 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
     catch (DbUpdateConcurrencyException)
     {
         return Results.BadRequest(new { message = "Словарь не найден" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+#endregion
+
+#region Администратор - Слова словаря
+
+app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
+    short dictionaryId,
+    string? search,
+    string sort,
+    string? lastName,
+    int limit,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        var words = db.Words
+            .Where(w => w.DictionaryId == dictionaryId);
+
+        if (search is not null)
+        {
+            search = search.ToUpperInvariant();
+
+            words = words.Where(w => w.WordName.Contains(search));
+        }
+
+        words = sort switch
+        {
+            "ascAlphabet" => words.OrderBy(w => w.WordName),
+            "descAlphabet" => words.OrderByDescending(w => w.WordName),
+            "ascLength" => words.OrderBy(w => w.WordName.Length).ThenBy(w => w.WordName),
+            "descLength" => words.OrderByDescending(w => w.WordName.Length).ThenBy(w => w.WordName),
+            _ => throw new NotImplementedException()
+        };
+
+        if (lastName is not null)
+        {
+            lastName = lastName.ToUpperInvariant();
+
+            words = sort switch
+            {
+                "ascAlphabet" => words.Where(w => w.WordName.CompareTo(lastName) > 0),
+                "descAlphabet" => words.Where(w => w.WordName.CompareTo(lastName) < 0),
+                "ascLength" => words.Where(w => w.WordName.Length == lastName.Length && w.WordName.CompareTo(lastName) > 0 || w.WordName.Length > lastName.Length),
+                "descLength" => words.Where(w => w.WordName.Length == lastName.Length && w.WordName.CompareTo(lastName) > 0 || w.WordName.Length < lastName.Length),
+                _ => throw new NotImplementedException()
+            };
+        }
+
+        return Results.Json(await words
+            .Take(limit)
+            .Select(w => new
+            {
+                id = w.WordId,
+                name = w.WordName,
+                definition = w.Definition
+            })
+            .ToListAsync());
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
+    short dictionaryId,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+        string definition = request.Form["definition"];
+
+        var id = await dbService.InsertWordAsync(dictionaryId, name, definition);
+
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { ex.Message });
+    }
+    catch (DbUpdateException ex)
+    {
+        string message = (ex.InnerException as PostgresException).SqlState switch
+        {
+            "23503" => "Словарь не найден",
+            "23505" => "Название занято"
+        };
+
+        return Results.BadRequest(new { message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
+    int id,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string definition = request.Form["definition"];
+
+        await dbService.UpdateWordAsync(id, definition);
+
+        return Results.NoContent();
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { ex.Message });
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Слово не найдено" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
+    int id,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        db.Words.Remove(new Word
+        {
+            WordId = id
+        });
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Слово не найдено" });
     }
     catch (Exception ex)
     {

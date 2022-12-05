@@ -64,7 +64,7 @@ namespace Crosswords.Services
                 {
                     int separatorIndex = line.IndexOf(' ');
 
-                    string wordName = line[..separatorIndex];
+                    string wordName = line[..separatorIndex].ToUpperInvariant();
                     if (!_validationService.IsFileWordName(wordName, lineNumber, out string? message))
                         throw new ArgumentException(message);
 
@@ -72,7 +72,7 @@ namespace Crosswords.Services
                     if (!_validationService.IsFileDefinition(definition, lineNumber, out message))
                         throw new ArgumentException(message);
 
-                    _db.Words.Add(new()
+                    _db.Words.Add(new Word
                     {
                         Dictionary = dictionary,
                         WordName = wordName,
@@ -87,12 +87,53 @@ namespace Crosswords.Services
 
         public async Task UpdateDictionaryAsync(short id, string name)
         {
-            var dictionary = new Dictionary()
+            var dictionary = new Dictionary
             {
                 DictionaryId = id
             };
             _db.Dictionaries.Attach(dictionary);
             dictionary.DictionaryName = name;
+            await _db.SaveChangesAsync();
+        }
+
+        #endregion
+
+        #region Администратор - Слова словаря
+
+        public async Task<int> InsertWordAsync(short dictionaryId, string name, string definition)
+        {
+            name = name.ToUpperInvariant();
+
+            if (!_validationService.IsWordName(name, out string? message))
+                throw new ArgumentException(message);
+
+            if (!_validationService.IsDefinition(definition, out message))
+                throw new ArgumentException(message);
+
+            var word = new Word
+            {
+                DictionaryId = dictionaryId,
+                WordName = name,
+                Definition = definition
+            };
+
+            _db.Words.Add(word);
+            await _db.SaveChangesAsync();
+
+            return word.WordId;
+        }
+
+        public async Task UpdateWordAsync(int id, string definition)
+        {
+            if (!_validationService.IsDefinition(definition, out string? message))
+                throw new ArgumentException(message);
+
+            var word = new Word
+            {
+                WordId = id
+            };
+            _db.Words.Attach(word);
+            word.Definition = definition;
             await _db.SaveChangesAsync();
         }
 
