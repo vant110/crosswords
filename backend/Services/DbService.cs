@@ -72,7 +72,7 @@ namespace Crosswords.Services
                     if (!_validationService.IsFileDefinition(definition, lineNumber, out message))
                         throw new ArgumentException(message);
 
-                    _db.Words.Add(new()
+                    _db.Words.Add(new Word
                     {
                         Dictionary = dictionary,
                         WordName = wordName,
@@ -87,7 +87,7 @@ namespace Crosswords.Services
 
         public async Task UpdateDictionaryAsync(short id, string name)
         {
-            var dictionary = new Dictionary()
+            var dictionary = new Dictionary
             {
                 DictionaryId = id
             };
@@ -110,7 +110,7 @@ namespace Crosswords.Services
             if (!_validationService.IsDefinition(definition, out message))
                 throw new ArgumentException(message);
 
-            var word = new Word()
+            var word = new Word
             {
                 DictionaryId = dictionaryId,
                 WordName = name,
@@ -128,7 +128,7 @@ namespace Crosswords.Services
             if (!_validationService.IsDefinition(definition, out string? message))
                 throw new ArgumentException(message);
 
-            var word = new Word()
+            var word = new Word
             {
                 WordId = id
             };

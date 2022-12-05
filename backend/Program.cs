@@ -385,6 +385,30 @@ app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
     }
 });
 
+app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
+    int id,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        db.Words.Remove(new Word
+        {
+            WordId = id
+        });
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Слово не найдено" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 #endregion
 
 app.MapGet("api/user", [Authorize] () => "User");
