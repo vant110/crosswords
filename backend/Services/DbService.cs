@@ -123,6 +123,20 @@ namespace Crosswords.Services
             return word.WordId;
         }
 
+        public async Task UpdateWordAsync(int id, string definition)
+        {
+            if (!_validationService.IsDefinition(definition, out string? message))
+                throw new ArgumentException(message);
+
+            var word = new Word()
+            {
+                WordId = id
+            };
+            _db.Words.Attach(word);
+            word.Definition = definition;
+            await _db.SaveChangesAsync();
+        }
+
         #endregion
 
     }

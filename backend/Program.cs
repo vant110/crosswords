@@ -186,7 +186,7 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
 
         var id = await dbService.InsertDictionaryAsync(name, dictionaryFile);
 
-        return Results.Json(new { id }, statusCode: 201);
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
     catch (ArgumentException ex)
     {
@@ -336,7 +336,7 @@ app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")
 
         var id = await dbService.InsertWordAsync(dictionaryId, name, definition);
 
-        return Results.Json(new { id }, statusCode: 201);
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
     catch (ArgumentException ex)
     {
@@ -351,6 +351,33 @@ app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")
         };
 
         return Results.BadRequest(new { message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
+    int id,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string definition = request.Form["definition"];
+
+        await dbService.UpdateWordAsync(id, definition);
+
+        return Results.NoContent();
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { ex.Message });
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Слово не найдено" });
     }
     catch (Exception ex)
     {
