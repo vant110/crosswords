@@ -502,6 +502,25 @@ app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
+#region Администратор - Кроссворды
+
+app.MapGet("api/themes/{themeId}/crosswords", [Authorize(Roles = "admin")] async (
+    short themeId,
+    CrosswordsContext db) =>
+{
+    return Results.Json(await db.Crosswords
+        .Where(c => c.ThemeId == themeId)
+        .Select(c => new
+        {
+            id = c.CrosswordId,
+            name = c.CrosswordName
+        })
+        .ToListAsync());
+});
+
+
+#endregion
+
 app.MapGet("api/user", [Authorize] () => "User");
 app.MapGet("api/admin", [Authorize(Roles = "admin")] () => "Admin");
 app.MapGet("api/player", [Authorize(Roles = "player")] () => "Player");
