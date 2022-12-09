@@ -413,6 +413,95 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
+#region Администратор - Темы
+
+app.MapGet("api/themes", [Authorize(Roles = "admin")] async (
+    CrosswordsContext db) =>
+{
+    return Results.Json(await db.Themes
+        .Select(t => new
+        {
+            id = t.ThemeId,
+            name = t.ThemeName
+        })
+        .ToListAsync());
+});
+
+app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+
+        var id = await dbService.InsertThemeAsync(name);
+
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Название занято" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapPut("api/themes/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+
+        await dbService.UpdateThemeAsync(id, name);
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Тема не найдена" });
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Название занято" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        db.Themes.Remove(new Theme
+        {
+            ThemeId = id
+        });
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Тема не найдена" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+#endregion
+
 app.MapGet("api/user", [Authorize] () => "User");
 app.MapGet("api/admin", [Authorize(Roles = "admin")] () => "Admin");
 app.MapGet("api/player", [Authorize(Roles = "player")] () => "Player");

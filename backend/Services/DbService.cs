@@ -139,5 +139,34 @@ namespace Crosswords.Services
 
         #endregion
 
+        #region Администратор - Темы
+
+        public async Task<short> InsertThemeAsync(string name)
+        {
+            var theme = new Theme
+            {
+                ThemeName = name
+            };
+
+            _db.Themes.Add(theme);
+            await _db.SaveChangesAsync();
+
+            return theme.ThemeId;
+        }
+
+        public async Task UpdateThemeAsync(short id, string name)
+        {
+            var theme = new Theme
+            {
+                ThemeId = id
+            };
+            _db.Themes.Attach(theme);
+            theme.ThemeName = name;
+            await _db.SaveChangesAsync();
+        }
+
+
+        #endregion
+
     }
 }
