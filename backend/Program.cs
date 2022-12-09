@@ -427,6 +427,28 @@ app.MapGet("api/themes", [Authorize(Roles = "admin")] async (
         .ToListAsync());
 });
 
+app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+
+        var id = await dbService.InsertThemeAsync(name);
+
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Название занято" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 
 #endregion
 
