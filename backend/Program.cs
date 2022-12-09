@@ -476,6 +476,29 @@ app.MapPut("api/themes/{id}", [Authorize(Roles = "admin")] async (
     }
 });
 
+app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        db.Themes.Remove(new Theme
+        {
+            ThemeId = id
+        });
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Тема не найдена" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
 
 #endregion
 
