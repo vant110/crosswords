@@ -449,6 +449,33 @@ app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
     }
 });
 
+app.MapPut("api/themes/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        string name = request.Form["name"];
+
+        await dbService.UpdateThemeAsync(id, name);
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Тема не найдена" });
+    }
+    catch (DbUpdateException)
+    {
+        return Results.BadRequest(new { message = "Название занято" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 
 #endregion
 

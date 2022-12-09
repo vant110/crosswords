@@ -154,6 +154,18 @@ namespace Crosswords.Services
             return theme.ThemeId;
         }
 
+        public async Task UpdateThemeAsync(short id, string name)
+        {
+            var theme = new Theme
+            {
+                ThemeId = id
+            };
+            _db.Themes.Attach(theme);
+            theme.ThemeName = name;
+            await _db.SaveChangesAsync();
+        }
+
+
         #endregion
 
     }
