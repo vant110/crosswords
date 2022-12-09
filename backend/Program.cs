@@ -413,6 +413,23 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
+#region Администратор - Темы
+
+app.MapGet("api/themes", [Authorize(Roles = "admin")] async (
+    CrosswordsContext db) =>
+{
+    return Results.Json(await db.Themes
+        .Select(t => new
+        {
+            id = t.ThemeId,
+            name = t.ThemeName
+        })
+        .ToListAsync());
+});
+
+
+#endregion
+
 app.MapGet("api/user", [Authorize] () => "User");
 app.MapGet("api/admin", [Authorize(Roles = "admin")] () => "Admin");
 app.MapGet("api/player", [Authorize(Roles = "player")] () => "Player");
