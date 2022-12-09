@@ -518,6 +518,42 @@ app.MapGet("api/themes/{themeId}/crosswords", [Authorize(Roles = "admin")] async
         .ToListAsync());
 });
 
+app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
+    int id,
+    CrosswordsContext db) =>
+{
+    return Results.Json(await db.Crosswords
+        .Where(c => c.CrosswordId == id)
+        .Select(c => new
+        {
+            c.DictionaryId,
+            size = new
+            {
+                x = c.HorizontalSize,
+                y = c.VerticalSize
+            },
+            c.PromptCount,
+            words = c.CrosswordWords
+                .Select(cw => new
+                {
+                    id = cw.WordId,
+                    name = cw.Word.WordName,
+                    definition = cw.Word.Definition,
+                    p1 = new
+                    {
+                        x = cw.X1,
+                        y = cw.Y1
+                    },
+                    p2 = new
+                    {
+                        x = cw.X2,
+                        y = cw.Y2
+                    }
+                })
+        })
+        .SingleOrDefaultAsync());
+});
+
 
 #endregion
 
