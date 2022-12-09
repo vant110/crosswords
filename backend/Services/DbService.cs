@@ -55,6 +55,7 @@ namespace Crosswords.Services
             };
             _db.Dictionaries.Add(dictionary);
             // Слова
+            var words = new Dictionary<string, string>();
             if (dictionaryFile is not null
                 && dictionaryFile.Length != 0)
             {
@@ -72,14 +73,16 @@ namespace Crosswords.Services
                     if (!_validationService.IsFileDefinition(definition, lineNumber, out message))
                         throw new ArgumentException(message);
 
-                    _db.Words.Add(new Word
-                    {
-                        Dictionary = dictionary,
-                        WordName = wordName,
-                        Definition = definition
-                    });
+                    if (!words.TryAdd(wordName, definition))
+                        throw new ArgumentException($"Cлово '{wordName}' неуникально");
                 }
             }
+            _db.Words.AddRange(words.Select(w => new Word
+            {
+                Dictionary = dictionary,
+                WordName = w.Key,
+                Definition = w.Value
+            }));
 
             await _db.SaveChangesAsync();
             return dictionary.DictionaryId;

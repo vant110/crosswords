@@ -178,8 +178,7 @@ app.MapGet("api/dictionaries", [Authorize(Roles = "admin")] async (
 
 app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     HttpRequest request,
-    DbService dbService,
-    CrosswordsContext db) =>
+    DbService dbService) =>
 {
     try
     {
@@ -194,17 +193,9 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     {
         return Results.BadRequest(new { ex.Message });
     }
-    catch (DbUpdateException ex)
+    catch (DbUpdateException)
     {
-        string constraintName = (ex.InnerException as PostgresException).ConstraintName ?? "";
-
-        string message = db.Dictionaries.EntityType.FindIndex(constraintName) is not null
-            ? "Название занято"
-            : db.Words.EntityType.FindIndex(constraintName) is not null
-                ? "Слова неуникальны"
-                : ex.Message;
-
-        return Results.BadRequest(new { message });
+        return Results.BadRequest(new { message = "Название занято" });
     }
     catch (Exception ex)
     {
