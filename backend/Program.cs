@@ -1,5 +1,6 @@
 using Crosswords.Db;
 using Crosswords.Db.Models;
+using Crosswords.Models;
 using Crosswords.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -529,8 +530,8 @@ app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
             c.DictionaryId,
             size = new
             {
-                x = c.HorizontalSize,
-                y = c.VerticalSize
+                width = c.HorizontalSize,
+                height = c.VerticalSize
             },
             c.PromptCount,
             words = c.CrosswordWords
@@ -552,6 +553,45 @@ app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
                 })
         })
         .SingleOrDefaultAsync());
+});
+
+app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        var crossword = await request.ReadFromJsonAsync<CrosswordModel>();
+
+        var id = await dbService.InsertCrosswordAsync(crossword);
+
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
+    }
+    catch (DbUpdateException ex)
+    {
+        string message = ex.InnerException is not PostgresException postgresException
+            ? ex.Message
+            : postgresException.SqlState switch
+            {
+                "23503" => postgresException.ConstraintName is null
+                    ? ex.Message
+                    : postgresException.ConstraintName.Contains("theme_id")
+                        ? "Тема не найдена"
+                        : postgresException.ConstraintName.Contains("dictionary_id")
+                            ? "Словарь не найден"
+                            : postgresException.ConstraintName.Contains("word_id")
+                                ? "Слово не найдено"
+                                : ex.Message,
+                "23505" => "Название занято",
+                _ => ex.Message
+            };
+
+        return Results.BadRequest(new { message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
 });
 
 

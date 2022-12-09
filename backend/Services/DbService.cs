@@ -1,5 +1,6 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
+using Crosswords.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Crosswords.Services
@@ -165,6 +166,22 @@ namespace Crosswords.Services
             await _db.SaveChangesAsync();
         }
 
+
+        #endregion
+
+        #region Администратор - Кроссворды
+
+        public async Task<short> InsertCrosswordAsync(CrosswordModel crosswordModel)
+        {
+            var crossword = crosswordModel.ToCrossword();
+            _db.Crosswords.Add(crossword);
+
+            _db.CrosswordWords.AddRange(crosswordModel.Words
+                .Select(w => w.ToCrosswordWord(crossword)));
+
+            await _db.SaveChangesAsync();
+            return crossword.CrosswordId;
+        }
 
         #endregion
 
