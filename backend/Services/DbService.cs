@@ -47,36 +47,14 @@ namespace Crosswords.Services
 
         #region Администратор - Словари
 
-        public async Task<short> InsertDictionaryAsync(string name, IFormFile? dictionaryFile)
+        public async Task<short> InsertDictionaryAsync(string name, Dictionary<string, string> words)
         {
             var dictionary = new Dictionary
             {
                 DictionaryName = name
             };
             _db.Dictionaries.Add(dictionary);
-            // Слова
-            var words = new Dictionary<string, string>();
-            if (dictionaryFile is not null
-                && dictionaryFile.Length != 0)
-            {
-                using var reader = new StreamReader(dictionaryFile.OpenReadStream());
-                string? line;
-                for (int lineNumber = 1; (line = await reader.ReadLineAsync()) is not null; lineNumber++)
-                {
-                    int separatorIndex = line.IndexOf(' ');
-
-                    string wordName = line[..separatorIndex].ToUpperInvariant();
-                    if (!_validationService.IsFileWordName(wordName, lineNumber, out string? message))
-                        throw new ArgumentException(message);
-
-                    string definition = line[(separatorIndex + 1)..];
-                    if (!_validationService.IsFileDefinition(definition, lineNumber, out message))
-                        throw new ArgumentException(message);
-
-                    if (!words.TryAdd(wordName, definition))
-                        throw new ArgumentException($"Cлово '{wordName}' неуникально");
-                }
-            }
+            
             _db.Words.AddRange(words.Select(w => new Word
             {
                 Dictionary = dictionary,

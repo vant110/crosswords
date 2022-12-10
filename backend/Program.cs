@@ -40,8 +40,9 @@ builder.Services
         .Services
     .AddAuthorization()
     .AddScoped<PasswordHasher<Player>>()
-    .AddScoped<ValidationService>()
     .AddScoped<DbService>()
+    .AddScoped<FileService>()
+    .AddScoped<ValidationService>()
     .AddCors();
 var app = builder.Build();
 app.UseDefaultFiles();
@@ -178,6 +179,7 @@ app.MapGet("api/dictionaries", [Authorize(Roles = "admin")] async (
 
 app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     HttpRequest request,
+    FileService fileService,
     DbService dbService) =>
 {
     try
@@ -185,7 +187,8 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
         string name = request.Form["name"];
         var dictionaryFile = request.Form.Files["dictionary"];
 
-        var id = await dbService.InsertDictionaryAsync(name, dictionaryFile);
+        var words = await fileService.ReadWordsAsync(dictionaryFile);
+        var id = await dbService.InsertDictionaryAsync(name, words);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
