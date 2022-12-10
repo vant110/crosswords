@@ -594,6 +594,50 @@ app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
     }
 });
 
+app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
+    int id,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        var crossword = await request.ReadFromJsonAsync<CrosswordModel>();
+
+        await dbService.UpdateCrosswordAsync(id, crossword);
+
+        return Results.NoContent();
+    }
+    catch (InvalidOperationException)
+    {
+        return Results.BadRequest(new { message = "Кроссворд не найден" });
+    }
+    catch (DbUpdateException ex)
+    {
+        string message = ex.InnerException is not PostgresException postgresException
+            ? ex.Message
+            : postgresException.SqlState switch
+            {
+                "23503" => postgresException.ConstraintName is null
+                    ? ex.Message
+                    : postgresException.ConstraintName.Contains("theme_id")
+                        ? "Тема не найдена"
+                        : postgresException.ConstraintName.Contains("dictionary_id")
+                            ? "Словарь не найден"
+                            : postgresException.ConstraintName.Contains("word_id")
+                                ? "Слово не найдено"
+                                : ex.Message,
+                "23505" => "Название занято",
+                _ => ex.Message
+            };
+
+        return Results.BadRequest(new { message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
 
 #endregion
 

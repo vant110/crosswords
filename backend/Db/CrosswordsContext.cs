@@ -127,14 +127,14 @@ public partial class CrosswordsContext : DbContext
                 .UsingEntity<Dictionary<string, object>>(
                     "SolvedCrossword",
                     r => r.HasOne<Crossword>().WithMany()
-                        .HasForeignKey("CrosswordId")
+                        .HasForeignKey("crossword_id")
                         .HasConstraintName("solved_crosswords_crossword_id_fkey"),
                     l => l.HasOne<Player>().WithMany()
-                        .HasForeignKey("PlayerId")
+                        .HasForeignKey("player_id")
                         .HasConstraintName("solved_crosswords_player_id_fkey"),
                     j =>
                     {
-                        j.HasKey("PlayerId", "CrosswordId").HasName("solved_crosswords_pkey");
+                        j.HasKey("player_id", "crossword_id").HasName("solved_crosswords_pkey");
                         j.ToTable("solved_crosswords");
                     });
         });

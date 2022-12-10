@@ -183,6 +183,57 @@ namespace Crosswords.Services
             return crossword.CrosswordId;
         }
 
+        public async Task UpdateCrosswordAsync(int id, CrosswordModel crosswordModel)
+        {
+            var crossword = await _db.Crosswords
+                .AsTracking()
+                .Where(c => c.CrosswordId == id)
+                .Include(c => c.CrosswordWords)
+                .Include(c => c.Saves) // !!!
+                .Include(c => c.Players) // !!!
+                .SingleAsync();
+
+            crossword.CrosswordName = crosswordModel.Name;
+            crossword.ThemeId = crosswordModel.ThemeId;
+            crossword.DictionaryId = crosswordModel.DictionaryId;
+            crossword.HorizontalSize = crosswordModel.Size.Width;
+            crossword.VerticalSize = crosswordModel.Size.Height;
+            crossword.PromptCount = crosswordModel.PromptCount;
+
+            var newCrosswordWords = crosswordModel.Words
+                .Select(w => w.ToCrosswordWord(crossword))
+                .ToList();
+            foreach (var cw in crossword.CrosswordWords)
+            {
+                var newCW = newCrosswordWords
+                    .Where(w => w.WordId == cw.WordId)
+                    .SingleOrDefault();
+
+                if (newCW is null)
+                {
+                    // Удаление
+                    _db.CrosswordWords.Remove(cw);
+                }
+                else
+                {
+                    // Изменение
+                    cw.X1 = newCW.X1;
+                    cw.Y1 = newCW.Y1;
+                    cw.X2 = newCW.X2;
+                    cw.Y2 = newCW.Y2;
+
+                    newCrosswordWords.Remove(newCW);
+                }
+            }
+            // Добавление
+            _db.CrosswordWords.AddRange(newCrosswordWords);
+
+            crossword.Saves.Clear();
+            crossword.Players.Clear();
+
+            await _db.SaveChangesAsync();
+        }
+
         #endregion
 
     }
