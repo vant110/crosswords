@@ -10,6 +10,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services
@@ -270,6 +271,7 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 
 app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
     short dictionaryId,
+    string? mask,
     string? search,
     string sort,
     string? lastName,
@@ -280,6 +282,13 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
     {
         var words = db.Words
             .Where(w => w.DictionaryId == dictionaryId);
+
+        if (mask is not null)
+        {
+            mask = $"^{mask.ToUpperInvariant()}$";
+
+            words = words.Where(w => Regex.IsMatch(w.WordName, mask));
+        }
 
         if (search is not null)
         {
