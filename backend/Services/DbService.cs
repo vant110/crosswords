@@ -183,7 +183,7 @@ namespace Crosswords.Services
             return crossword.CrosswordId;
         }
 
-        public async Task UpdateCrosswordAsync(int id, CrosswordModel crosswordModel)
+        public async Task UpdateCrosswordAsync(short id, CrosswordModel crosswordModel)
         {
             var crossword = await _db.Crosswords
                 .AsTracking()

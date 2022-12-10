@@ -520,7 +520,7 @@ app.MapGet("api/themes/{themeId}/crosswords", [Authorize(Roles = "admin")] async
 });
 
 app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
-    int id,
+    short id,
     CrosswordsContext db) =>
 {
     return Results.Json(await db.Crosswords
@@ -595,7 +595,7 @@ app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
 });
 
 app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
-    int id,
+    short id,
     HttpRequest request,
     DbService dbService) =>
 {
@@ -638,6 +638,29 @@ app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
     }
 });
 
+app.MapDelete("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        db.Crosswords.Remove(new Crossword
+        {
+            CrosswordId = id
+        });
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "Кроссворд не найден" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
 
 #endregion
 
