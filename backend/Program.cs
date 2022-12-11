@@ -1,5 +1,6 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
+using Crosswords.Models.Client;
 using Crosswords.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -62,14 +63,14 @@ app.MapPost("api/auth/signup", async (
 
     try
     {
-        string login = request.Form["login"];
-        if (login == app.Configuration["Admin:Login"])
+        var user = await request.ReadFromJsonAsync<UserModel>();
+
+        if (user.Login == app.Configuration["Admin:Login"])
             return Results.BadRequest(new { Message });
 
-        string password = request.Form["password"];
-        string passwordHash = passwordHasher.HashPassword(null, password);
+        string passwordHash = passwordHasher.HashPassword(null, user.Password);
 
-        var playerId = await dbService.InsertPlayerAsync(login, passwordHash);
+        var playerId = await dbService.InsertPlayerAsync(user.Login, passwordHash);
 
         var jwt = new JwtSecurityToken(
             claims: new List<Claim>
@@ -104,27 +105,26 @@ app.MapPost("api/auth/signin", async (
 
     try
     {
-        string login = request.Form["login"];
-        string password = request.Form["password"];
+        var user = await request.ReadFromJsonAsync<UserModel>();
         bool isAdmin;
         var claims = new List<Claim>();
 
-        if (login == app.Configuration["Admin:Login"])
+        if (user.Login == app.Configuration["Admin:Login"])
         {
-            if (password != app.Configuration["Admin:Password"])
+            if (user.Password != app.Configuration["Admin:Password"])
                 return Results.BadRequest(new { Message });
 
             isAdmin = true;
         }
         else
         {
-            var player = await dbService.SelectPlayerAsync(login);
+            var player = await dbService.SelectPlayerAsync(user.Login);
 
             if (player == null
                 || passwordHasher.VerifyHashedPassword(
                     null,
                     player.PasswordHash,
-                    password)
+                    user.Password)
                 == PasswordVerificationResult.Failed)
                 return Results.BadRequest(new { Message });
 
@@ -229,9 +229,9 @@ app.MapPatch("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string name = request.Form["name"];
+        var dictionary = await request.ReadFromJsonAsync<DictionaryModel>();
 
-        await dbService.UpdateDictionaryAsync(id, name);
+        await dbService.UpdateDictionaryAsync(id, dictionary.Name);
 
         return Results.NoContent();
     }
@@ -343,10 +343,9 @@ app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")
 {
     try
     {
-        string name = request.Form["name"];
-        string definition = request.Form["definition"];
+        var word = await request.ReadFromJsonAsync<WordModel>();
 
-        var id = await dbService.InsertWordAsync(dictionaryId, name, definition);
+        var id = await dbService.InsertWordAsync(dictionaryId, word.Name, word.Definition);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
@@ -377,9 +376,9 @@ app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string definition = request.Form["definition"];
+        var word = await request.ReadFromJsonAsync<WordModel>();
 
-        await dbService.UpdateWordAsync(id, definition);
+        await dbService.UpdateWordAsync(id, word.Definition);
 
         return Results.NoContent();
     }
@@ -443,9 +442,9 @@ app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string name = request.Form["name"];
+        var theme = await request.ReadFromJsonAsync<ThemeModel>();
 
-        var id = await dbService.InsertThemeAsync(name);
+        var id = await dbService.InsertThemeAsync(theme.Name);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
@@ -466,9 +465,9 @@ app.MapPut("api/themes/{id}", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string name = request.Form["name"];
+        var theme = await request.ReadFromJsonAsync<ThemeModel>();
 
-        await dbService.UpdateThemeAsync(id, name);
+        await dbService.UpdateThemeAsync(id, theme.Name);
 
         return Results.NoContent();
     }
