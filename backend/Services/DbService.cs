@@ -48,39 +48,20 @@ namespace Crosswords.Services
 
         #region Администратор - Словари
 
-        public async Task<short> InsertDictionaryAsync(string name, IFormFile? dictionaryFile)
+        public async Task<short> InsertDictionaryAsync(string name, Dictionary<string, string> words)
         {
             var dictionary = new Dictionary
             {
                 DictionaryName = name
             };
             _db.Dictionaries.Add(dictionary);
-            // Слова
-            if (dictionaryFile is not null
-                && dictionaryFile.Length != 0)
+            
+            _db.Words.AddRange(words.Select(w => new Word
             {
-                using var reader = new StreamReader(dictionaryFile.OpenReadStream());
-                string? line;
-                for (int lineNumber = 1; (line = await reader.ReadLineAsync()) is not null; lineNumber++)
-                {
-                    int separatorIndex = line.IndexOf(' ');
-
-                    string wordName = line[..separatorIndex].ToUpperInvariant();
-                    if (!_validationService.IsFileWordName(wordName, lineNumber, out string? message))
-                        throw new ArgumentException(message);
-
-                    string definition = line[(separatorIndex + 1)..];
-                    if (!_validationService.IsFileDefinition(definition, lineNumber, out message))
-                        throw new ArgumentException(message);
-
-                    _db.Words.Add(new Word
-                    {
-                        Dictionary = dictionary,
-                        WordName = wordName,
-                        Definition = definition
-                    });
-                }
-            }
+                Dictionary = dictionary,
+                WordName = w.Key,
+                Definition = w.Value
+            }));
 
             await _db.SaveChangesAsync();
             return dictionary.DictionaryId;
@@ -103,11 +84,11 @@ namespace Crosswords.Services
 
         public async Task<int> InsertWordAsync(short dictionaryId, string name, string definition)
         {
-            name = name.ToUpperInvariant();
-
+            name = name.ToUpper();
             if (!_validationService.IsWordName(name, out string? message))
                 throw new ArgumentException(message);
 
+            definition = char.ToUpper(definition[0]) + definition[1..];
             if (!_validationService.IsDefinition(definition, out message))
                 throw new ArgumentException(message);
 
@@ -126,6 +107,7 @@ namespace Crosswords.Services
 
         public async Task UpdateWordAsync(int id, string definition)
         {
+            definition = char.ToUpper(definition[0]) + definition[1..];
             if (!_validationService.IsDefinition(definition, out string? message))
                 throw new ArgumentException(message);
 

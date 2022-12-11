@@ -1,6 +1,7 @@
-using Crosswords.Db;
+п»їusing Crosswords.Db;
 using Crosswords.Db.Models;
 using Crosswords.Models;
+using Crosswords.Models.Client;
 using Crosswords.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -42,8 +43,9 @@ builder.Services
         .Services
     .AddAuthorization()
     .AddScoped<PasswordHasher<Player>>()
-    .AddScoped<ValidationService>()
     .AddScoped<DbService>()
+    .AddScoped<FileService>()
+    .AddScoped<ValidationService>()
     .AddCors();
 var app = builder.Build();
 app.UseDefaultFiles();
@@ -52,25 +54,25 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors(builder => builder.AllowAnyOrigin());
 
-#region Пользователь
+#region РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ
 
 app.MapPost("api/auth/signup", async (
     HttpRequest request,
     PasswordHasher<Player> passwordHasher,
     DbService dbService) =>
 {
-    const string Message = "Логин занят";
+    const string Message = "Р›РѕРіРёРЅ Р·Р°РЅСЏС‚";
 
     try
     {
-        string login = request.Form["login"];
-        if (login == app.Configuration["Admin:Login"])
+        var user = await request.ReadFromJsonAsync<UserModel>();
+
+        if (user.Login == app.Configuration["Admin:Login"])
             return Results.BadRequest(new { Message });
 
-        string password = request.Form["password"];
-        string passwordHash = passwordHasher.HashPassword(null, password);
+        string passwordHash = passwordHasher.HashPassword(null, user.Password);
 
-        var playerId = await dbService.InsertPlayerAsync(login, passwordHash);
+        var playerId = await dbService.InsertPlayerAsync(user.Login, passwordHash);
 
         var jwt = new JwtSecurityToken(
             claims: new List<Claim>
@@ -101,31 +103,30 @@ app.MapPost("api/auth/signin", async (
     PasswordHasher<Player> passwordHasher,
     DbService dbService) =>
 {
-    const string Message = "Логин или пароль неверен";
+    const string Message = "Р›РѕРіРёРЅ РёР»Рё РїР°СЂРѕР»СЊ РЅРµРІРµСЂРµРЅ";
 
     try
     {
-        string login = request.Form["login"];
-        string password = request.Form["password"];
+        var user = await request.ReadFromJsonAsync<UserModel>();
         bool isAdmin;
         var claims = new List<Claim>();
 
-        if (login == app.Configuration["Admin:Login"])
+        if (user.Login == app.Configuration["Admin:Login"])
         {
-            if (password != app.Configuration["Admin:Password"])
+            if (user.Password != app.Configuration["Admin:Password"])
                 return Results.BadRequest(new { Message });
 
             isAdmin = true;
         }
         else
         {
-            var player = await dbService.SelectPlayerAsync(login);
+            var player = await dbService.SelectPlayerAsync(user.Login);
 
             if (player == null
                 || passwordHasher.VerifyHashedPassword(
                     null,
                     player.PasswordHash,
-                    password)
+                    user.Password)
                 == PasswordVerificationResult.Failed)
                 return Results.BadRequest(new { Message });
 
@@ -164,7 +165,7 @@ app.MapPost("api/auth/signin", async (
 
 #endregion
 
-#region Администратор - Словари
+#region РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ - РЎР»РѕРІР°СЂРё
 
 app.MapGet("api/dictionaries", [Authorize(Roles = "admin")] async (
     CrosswordsContext db) =>
@@ -180,15 +181,32 @@ app.MapGet("api/dictionaries", [Authorize(Roles = "admin")] async (
 
 app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     HttpRequest request,
-    DbService dbService,
-    CrosswordsContext db) =>
+    FileService fileService,
+    DbService dbService) =>
 {
     try
     {
         string name = request.Form["name"];
         var dictionaryFile = request.Form.Files["dictionary"];
 
-        var id = await dbService.InsertDictionaryAsync(name, dictionaryFile);
+        string encoding = "utf-8";
+        if (request.Form.TryGetValue("encoding", out var encodings)
+            && encodings[0] is not null)
+        {
+            encoding = encodings[0];
+        }
+
+        string separator = " ";
+        if (request.Form.TryGetValue("separator", out var separators)
+            && separators[0] is not null)
+        {
+            separator = separators[0];
+        }
+
+        bool skipInvalid = request.Form.ContainsKey("skipInvalid");
+
+        var words = await fileService.ReadWordsAsync(dictionaryFile, encoding, separator, skipInvalid);
+        var id = await dbService.InsertDictionaryAsync(name, words);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
@@ -196,17 +214,9 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     {
         return Results.BadRequest(new { ex.Message });
     }
-    catch (DbUpdateException ex)
+    catch (DbUpdateException)
     {
-        string constraintName = (ex.InnerException as PostgresException).ConstraintName ?? "";
-
-        string message = db.Dictionaries.EntityType.FindIndex(constraintName) is not null
-            ? "Название занято"
-            : db.Words.EntityType.FindIndex(constraintName) is not null
-                ? "Слова неуникальны"
-                : ex.Message;
-
-        return Results.BadRequest(new { message });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -221,19 +231,19 @@ app.MapPatch("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string name = request.Form["name"];
+        var dictionary = await request.ReadFromJsonAsync<DictionaryModel>();
 
-        await dbService.UpdateDictionaryAsync(id, name);
+        await dbService.UpdateDictionaryAsync(id, dictionary.Name);
 
         return Results.NoContent();
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Словарь не найден" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІР°СЂСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -257,7 +267,7 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Словарь не найден" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІР°СЂСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
     catch (Exception ex)
     {
@@ -267,7 +277,7 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
-#region Администратор - Слова словаря
+#region РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ - РЎР»РѕРІР° СЃР»РѕРІР°СЂСЏ
 
 app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
     short dictionaryId,
@@ -292,7 +302,7 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
 
         if (search is not null)
         {
-            search = search.ToUpperInvariant();
+            search = search.ToUpper();
 
             words = words.Where(w => w.WordName.Contains(search));
         }
@@ -308,7 +318,7 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
 
         if (lastName is not null)
         {
-            lastName = lastName.ToUpperInvariant();
+            lastName = lastName.ToUpper();
 
             words = sort switch
             {
@@ -343,10 +353,9 @@ app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")
 {
     try
     {
-        string name = request.Form["name"];
-        string definition = request.Form["definition"];
+        var word = await request.ReadFromJsonAsync<WordModel>();
 
-        var id = await dbService.InsertWordAsync(dictionaryId, name, definition);
+        var id = await dbService.InsertWordAsync(dictionaryId, word.Name, word.Definition);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
@@ -358,8 +367,8 @@ app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")
     {
         string message = (ex.InnerException as PostgresException).SqlState switch
         {
-            "23503" => "Словарь не найден",
-            "23505" => "Название занято"
+            "23503" => "РЎР»РѕРІР°СЂСЊ РЅРµ РЅР°Р№РґРµРЅ",
+            "23505" => "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ"
         };
 
         return Results.BadRequest(new { message });
@@ -377,9 +386,9 @@ app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string definition = request.Form["definition"];
+        var word = await request.ReadFromJsonAsync<WordModel>();
 
-        await dbService.UpdateWordAsync(id, definition);
+        await dbService.UpdateWordAsync(id, word.Definition);
 
         return Results.NoContent();
     }
@@ -389,7 +398,7 @@ app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Слово не найдено" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІРѕ РЅРµ РЅР°Р№РґРµРЅРѕ" });
     }
     catch (Exception ex)
     {
@@ -413,7 +422,7 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Слово не найдено" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІРѕ РЅРµ РЅР°Р№РґРµРЅРѕ" });
     }
     catch (Exception ex)
     {
@@ -423,7 +432,7 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
-#region Администратор - Темы
+#region РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ - РўРµРјС‹
 
 app.MapGet("api/themes", [Authorize(Roles = "admin")] async (
     CrosswordsContext db) =>
@@ -443,15 +452,15 @@ app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string name = request.Form["name"];
+        var theme = await request.ReadFromJsonAsync<ThemeModel>();
 
-        var id = await dbService.InsertThemeAsync(name);
+        var id = await dbService.InsertThemeAsync(theme.Name);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -466,19 +475,19 @@ app.MapPut("api/themes/{id}", [Authorize(Roles = "admin")] async (
 {
     try
     {
-        string name = request.Form["name"];
+        var theme = await request.ReadFromJsonAsync<ThemeModel>();
 
-        await dbService.UpdateThemeAsync(id, name);
+        await dbService.UpdateThemeAsync(id, theme.Name);
 
         return Results.NoContent();
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Тема не найдена" });
+        return Results.BadRequest(new { message = "РўРµРјР° РЅРµ РЅР°Р№РґРµРЅР°" });
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -502,7 +511,7 @@ app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Тема не найдена" });
+        return Results.BadRequest(new { message = "РўРµРјР° РЅРµ РЅР°Р№РґРµРЅР°" });
     }
     catch (Exception ex)
     {
@@ -512,7 +521,7 @@ app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
-#region Администратор - Кроссворды
+#region пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ - пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 
 app.MapGet("api/themes/{themeId}/crosswords", [Authorize(Roles = "admin")] async (
     short themeId,
@@ -585,13 +594,13 @@ app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
                 "23503" => postgresException.ConstraintName is null
                     ? ex.Message
                     : postgresException.ConstraintName.Contains("theme_id")
-                        ? "Тема не найдена"
+                        ? "пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ"
                         : postgresException.ConstraintName.Contains("dictionary_id")
-                            ? "Словарь не найден"
+                            ? "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ"
                             : postgresException.ConstraintName.Contains("word_id")
-                                ? "Слово не найдено"
+                                ? "пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ"
                                 : ex.Message,
-                "23505" => "Название занято",
+                "23505" => "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ",
                 _ => ex.Message
             };
 
@@ -618,7 +627,7 @@ app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (InvalidOperationException)
     {
-        return Results.BadRequest(new { message = "Кроссворд не найден" });
+        return Results.BadRequest(new { message = "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ" });
     }
     catch (DbUpdateException ex)
     {
@@ -629,13 +638,13 @@ app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
                 "23503" => postgresException.ConstraintName is null
                     ? ex.Message
                     : postgresException.ConstraintName.Contains("theme_id")
-                        ? "Тема не найдена"
+                        ? "пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ"
                         : postgresException.ConstraintName.Contains("dictionary_id")
-                            ? "Словарь не найден"
+                            ? "пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ"
                             : postgresException.ConstraintName.Contains("word_id")
-                                ? "Слово не найдено"
+                                ? "пїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ"
                                 : ex.Message,
-                "23505" => "Название занято",
+                "23505" => "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ",
                 _ => ex.Message
             };
 
@@ -663,7 +672,7 @@ app.MapDelete("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Кроссворд не найден" });
+        return Results.BadRequest(new { message = "пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ" });
     }
     catch (Exception ex)
     {
