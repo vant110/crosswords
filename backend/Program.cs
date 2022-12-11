@@ -1,4 +1,4 @@
-using Crosswords.Db;
+п»їusing Crosswords.Db;
 using Crosswords.Db.Models;
 using Crosswords.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -51,14 +51,14 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseCors(builder => builder.AllowAnyOrigin());
 
-#region Пользователь
+#region РџРѕР»СЊР·РѕРІР°С‚РµР»СЊ
 
 app.MapPost("api/auth/signup", async (
     HttpRequest request,
     PasswordHasher<Player> passwordHasher,
     DbService dbService) =>
 {
-    const string Message = "Логин занят";
+    const string Message = "Р›РѕРіРёРЅ Р·Р°РЅСЏС‚";
 
     try
     {
@@ -100,7 +100,7 @@ app.MapPost("api/auth/signin", async (
     PasswordHasher<Player> passwordHasher,
     DbService dbService) =>
 {
-    const string Message = "Логин или пароль неверен";
+    const string Message = "Р›РѕРіРёРЅ РёР»Рё РїР°СЂРѕР»СЊ РЅРµРІРµСЂРµРЅ";
 
     try
     {
@@ -163,7 +163,7 @@ app.MapPost("api/auth/signin", async (
 
 #endregion
 
-#region Администратор - Словари
+#region РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ - РЎР»РѕРІР°СЂРё
 
 app.MapGet("api/dictionaries", [Authorize(Roles = "admin")] async (
     CrosswordsContext db) =>
@@ -214,7 +214,7 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -237,11 +237,11 @@ app.MapPatch("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Словарь не найден" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІР°СЂСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -265,7 +265,7 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Словарь не найден" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІР°СЂСЊ РЅРµ РЅР°Р№РґРµРЅ" });
     }
     catch (Exception ex)
     {
@@ -275,7 +275,7 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
-#region Администратор - Слова словаря
+#region РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ - РЎР»РѕРІР° СЃР»РѕРІР°СЂСЏ
 
 app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
     short dictionaryId,
@@ -358,8 +358,8 @@ app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")
     {
         string message = (ex.InnerException as PostgresException).SqlState switch
         {
-            "23503" => "Словарь не найден",
-            "23505" => "Название занято"
+            "23503" => "РЎР»РѕРІР°СЂСЊ РЅРµ РЅР°Р№РґРµРЅ",
+            "23505" => "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ"
         };
 
         return Results.BadRequest(new { message });
@@ -389,7 +389,7 @@ app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Слово не найдено" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІРѕ РЅРµ РЅР°Р№РґРµРЅРѕ" });
     }
     catch (Exception ex)
     {
@@ -413,7 +413,7 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Слово не найдено" });
+        return Results.BadRequest(new { message = "РЎР»РѕРІРѕ РЅРµ РЅР°Р№РґРµРЅРѕ" });
     }
     catch (Exception ex)
     {
@@ -423,7 +423,7 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
-#region Администратор - Темы
+#region РђРґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂ - РўРµРјС‹
 
 app.MapGet("api/themes", [Authorize(Roles = "admin")] async (
     CrosswordsContext db) =>
@@ -451,7 +451,7 @@ app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -474,11 +474,11 @@ app.MapPut("api/themes/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Тема не найдена" });
+        return Results.BadRequest(new { message = "РўРµРјР° РЅРµ РЅР°Р№РґРµРЅР°" });
     }
     catch (DbUpdateException)
     {
-        return Results.BadRequest(new { message = "Название занято" });
+        return Results.BadRequest(new { message = "РќР°Р·РІР°РЅРёРµ Р·Р°РЅСЏС‚Рѕ" });
     }
     catch (Exception ex)
     {
@@ -502,7 +502,7 @@ app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "Тема не найдена" });
+        return Results.BadRequest(new { message = "РўРµРјР° РЅРµ РЅР°Р№РґРµРЅР°" });
     }
     catch (Exception ex)
     {
