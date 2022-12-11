@@ -27,7 +27,7 @@ namespace Crosswords.Services
                 {
                     int separatorIndex = line.IndexOf(separator);
 
-                    string wordName = line[..separatorIndex].ToUpperInvariant();
+                    string wordName = line[..separatorIndex].ToUpper();
                     if (!_validationService.IsFileWordName(wordName, lineNumber, out string? message))
                     {
                         if (skipInvalid)
@@ -36,7 +36,8 @@ namespace Crosswords.Services
                             throw new ArgumentException(message);
                     }
 
-                    string definition = line[(separatorIndex + separator.Length)..];
+                    string definition = char.ToUpper(line[separatorIndex + separator.Length])
+                        + line[(separatorIndex + separator.Length + 1)..];
                     if (!_validationService.IsFileDefinition(definition, lineNumber, out message))
                     {
                         if (skipInvalid)

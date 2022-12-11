@@ -9,7 +9,7 @@ namespace Crosswords.Services
         [GeneratedRegex("^[А-ЯЁ]+$")]
         private static partial Regex WordNameRegex();
 
-        [GeneratedRegex("^[а-яА-ЯЁё(\"]")]
+        [GeneratedRegex("^[А-ЯЁ(\"]")]
         private static partial Regex DefinitionRegex();
 
         private const int MinWordNameLength = 3;

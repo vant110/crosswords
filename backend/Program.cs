@@ -292,7 +292,7 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
 
         if (search is not null)
         {
-            search = search.ToUpperInvariant();
+            search = search.ToUpper();
 
             words = words.Where(w => w.WordName.Contains(search));
         }
@@ -308,7 +308,7 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
 
         if (lastName is not null)
         {
-            lastName = lastName.ToUpperInvariant();
+            lastName = lastName.ToUpper();
 
             words = sort switch
             {
