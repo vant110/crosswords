@@ -84,10 +84,10 @@ namespace Crosswords.Services
         public async Task<int> InsertWordAsync(short dictionaryId, string name, string definition)
         {
             name = name.ToUpper();
-
             if (!_validationService.IsWordName(name, out string? message))
                 throw new ArgumentException(message);
 
+            definition = char.ToUpper(definition[0]) + definition[1..];
             if (!_validationService.IsDefinition(definition, out message))
                 throw new ArgumentException(message);
 
@@ -106,6 +106,7 @@ namespace Crosswords.Services
 
         public async Task UpdateWordAsync(int id, string definition)
         {
+            definition = char.ToUpper(definition[0]) + definition[1..];
             if (!_validationService.IsDefinition(definition, out string? message))
                 throw new ArgumentException(message);
 
