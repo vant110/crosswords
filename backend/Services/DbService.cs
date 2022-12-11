@@ -1,5 +1,6 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
+using Crosswords.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace Crosswords.Services
@@ -147,6 +148,73 @@ namespace Crosswords.Services
             await _db.SaveChangesAsync();
         }
 
+
+        #endregion
+
+        #region Администратор - Кроссворды
+
+        public async Task<short> InsertCrosswordAsync(CrosswordModel crosswordModel)
+        {
+            var crossword = crosswordModel.ToCrossword();
+            _db.Crosswords.Add(crossword);
+
+            _db.CrosswordWords.AddRange(crosswordModel.Words
+                .Select(w => w.ToCrosswordWord(crossword)));
+
+            await _db.SaveChangesAsync();
+            return crossword.CrosswordId;
+        }
+
+        public async Task UpdateCrosswordAsync(short id, CrosswordModel crosswordModel)
+        {
+            var crossword = await _db.Crosswords
+                .AsTracking()
+                .Where(c => c.CrosswordId == id)
+                .Include(c => c.CrosswordWords)
+                .Include(c => c.Saves) // !!!
+                .Include(c => c.Players) // !!!
+                .SingleAsync();
+
+            crossword.CrosswordName = crosswordModel.Name;
+            crossword.ThemeId = crosswordModel.ThemeId;
+            crossword.DictionaryId = crosswordModel.DictionaryId;
+            crossword.Width = crosswordModel.Size.Width;
+            crossword.Height = crosswordModel.Size.Height;
+            crossword.PromptCount = crosswordModel.PromptCount;
+
+            var newCrosswordWords = crosswordModel.Words
+                .Select(w => w.ToCrosswordWord(crossword))
+                .ToList();
+            foreach (var cw in crossword.CrosswordWords)
+            {
+                var newCW = newCrosswordWords
+                    .Where(w => w.WordId == cw.WordId)
+                    .SingleOrDefault();
+
+                if (newCW is null)
+                {
+                    // Удаление
+                    _db.CrosswordWords.Remove(cw);
+                }
+                else
+                {
+                    // Изменение
+                    cw.X1 = newCW.X1;
+                    cw.Y1 = newCW.Y1;
+                    cw.X2 = newCW.X2;
+                    cw.Y2 = newCW.Y2;
+
+                    newCrosswordWords.Remove(newCW);
+                }
+            }
+            // Добавление
+            _db.CrosswordWords.AddRange(newCrosswordWords);
+
+            crossword.Saves.Clear();
+            crossword.Players.Clear();
+
+            await _db.SaveChangesAsync();
+        }
 
         #endregion
 

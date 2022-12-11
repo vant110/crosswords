@@ -13,9 +13,9 @@ public partial class Crossword
 
     public short DictionaryId { get; set; }
 
-    public short HorizontalSize { get; set; }
+    public short Width { get; set; }
 
-    public short VerticalSize { get; set; }
+    public short Height { get; set; }
 
     public short PromptCount { get; set; }
 

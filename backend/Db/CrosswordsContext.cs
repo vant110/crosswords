@@ -41,10 +41,10 @@ public partial class CrosswordsContext : DbContext
             entity.Property(e => e.CrosswordId).HasColumnName("crossword_id");
             entity.Property(e => e.CrosswordName).HasColumnName("crossword_name");
             entity.Property(e => e.DictionaryId).HasColumnName("dictionary_id");
-            entity.Property(e => e.HorizontalSize).HasColumnName("horizontal_size");
+            entity.Property(e => e.Width).HasColumnName("width");
             entity.Property(e => e.PromptCount).HasColumnName("prompt_count");
             entity.Property(e => e.ThemeId).HasColumnName("theme_id");
-            entity.Property(e => e.VerticalSize).HasColumnName("vertical_size");
+            entity.Property(e => e.Height).HasColumnName("height");
 
             entity.HasOne(d => d.Dictionary).WithMany(p => p.Crosswords)
                 .HasForeignKey(d => d.DictionaryId)
@@ -127,14 +127,14 @@ public partial class CrosswordsContext : DbContext
                 .UsingEntity<Dictionary<string, object>>(
                     "SolvedCrossword",
                     r => r.HasOne<Crossword>().WithMany()
-                        .HasForeignKey("CrosswordId")
+                        .HasForeignKey("crossword_id")
                         .HasConstraintName("solved_crosswords_crossword_id_fkey"),
                     l => l.HasOne<Player>().WithMany()
-                        .HasForeignKey("PlayerId")
+                        .HasForeignKey("player_id")
                         .HasConstraintName("solved_crosswords_player_id_fkey"),
                     j =>
                     {
-                        j.HasKey("PlayerId", "CrosswordId").HasName("solved_crosswords_pkey");
+                        j.HasKey("player_id", "crossword_id").HasName("solved_crosswords_pkey");
                         j.ToTable("solved_crosswords");
                     });
         });

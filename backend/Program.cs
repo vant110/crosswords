@@ -1,5 +1,6 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
+using Crosswords.Models;
 using Crosswords.Models.Client;
 using Crosswords.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -10,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.Services
@@ -279,6 +281,7 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
 
 app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
     short dictionaryId,
+    string? mask,
     string? search,
     string sort,
     string? lastName,
@@ -289,6 +292,13 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
     {
         var words = db.Words
             .Where(w => w.DictionaryId == dictionaryId);
+
+        if (mask is not null)
+        {
+            mask = $"^{mask.ToUpperInvariant()}$";
+
+            words = words.Where(w => Regex.IsMatch(w.WordName, mask));
+        }
 
         if (search is not null)
         {
@@ -502,6 +512,167 @@ app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
     catch (DbUpdateConcurrencyException)
     {
         return Results.BadRequest(new { message = "Тема не найдена" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+#endregion
+
+#region ������������� - ����������
+
+app.MapGet("api/themes/{themeId}/crosswords", [Authorize(Roles = "admin")] async (
+    short themeId,
+    CrosswordsContext db) =>
+{
+    return Results.Json(await db.Crosswords
+        .Where(c => c.ThemeId == themeId)
+        .Select(c => new
+        {
+            id = c.CrosswordId,
+            name = c.CrosswordName
+        })
+        .ToListAsync());
+});
+
+app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    CrosswordsContext db) =>
+{
+    return Results.Json(await db.Crosswords
+        .Where(c => c.CrosswordId == id)
+        .Select(c => new
+        {
+            c.DictionaryId,
+            size = new
+            {
+                c.Width,
+                c.Height
+            },
+            c.PromptCount,
+            words = c.CrosswordWords
+                .Select(cw => new
+                {
+                    id = cw.WordId,
+                    name = cw.Word.WordName,
+                    definition = cw.Word.Definition,
+                    p1 = new
+                    {
+                        x = cw.X1,
+                        y = cw.Y1
+                    },
+                    p2 = new
+                    {
+                        x = cw.X2,
+                        y = cw.Y2
+                    }
+                })
+        })
+        .SingleOrDefaultAsync());
+});
+
+app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        var crossword = await request.ReadFromJsonAsync<CrosswordModel>();
+
+        var id = await dbService.InsertCrosswordAsync(crossword);
+
+        return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
+    }
+    catch (DbUpdateException ex)
+    {
+        string message = ex.InnerException is not PostgresException postgresException
+            ? ex.Message
+            : postgresException.SqlState switch
+            {
+                "23503" => postgresException.ConstraintName is null
+                    ? ex.Message
+                    : postgresException.ConstraintName.Contains("theme_id")
+                        ? "���� �� �������"
+                        : postgresException.ConstraintName.Contains("dictionary_id")
+                            ? "������� �� ������"
+                            : postgresException.ConstraintName.Contains("word_id")
+                                ? "����� �� �������"
+                                : ex.Message,
+                "23505" => "�������� ������",
+                _ => ex.Message
+            };
+
+        return Results.BadRequest(new { message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    HttpRequest request,
+    DbService dbService) =>
+{
+    try
+    {
+        var crossword = await request.ReadFromJsonAsync<CrosswordModel>();
+
+        await dbService.UpdateCrosswordAsync(id, crossword);
+
+        return Results.NoContent();
+    }
+    catch (InvalidOperationException)
+    {
+        return Results.BadRequest(new { message = "��������� �� ������" });
+    }
+    catch (DbUpdateException ex)
+    {
+        string message = ex.InnerException is not PostgresException postgresException
+            ? ex.Message
+            : postgresException.SqlState switch
+            {
+                "23503" => postgresException.ConstraintName is null
+                    ? ex.Message
+                    : postgresException.ConstraintName.Contains("theme_id")
+                        ? "���� �� �������"
+                        : postgresException.ConstraintName.Contains("dictionary_id")
+                            ? "������� �� ������"
+                            : postgresException.ConstraintName.Contains("word_id")
+                                ? "����� �� �������"
+                                : ex.Message,
+                "23505" => "�������� ������",
+                _ => ex.Message
+            };
+
+        return Results.BadRequest(new { message });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapDelete("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
+    short id,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        db.Crosswords.Remove(new Crossword
+        {
+            CrosswordId = id
+        });
+        await db.SaveChangesAsync();
+
+        return Results.NoContent();
+    }
+    catch (DbUpdateConcurrencyException)
+    {
+        return Results.BadRequest(new { message = "��������� �� ������" });
     }
     catch (Exception ex)
     {
