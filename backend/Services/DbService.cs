@@ -196,8 +196,8 @@ namespace Crosswords.Services
             crossword.CrosswordName = crosswordModel.Name;
             crossword.ThemeId = crosswordModel.ThemeId;
             crossword.DictionaryId = crosswordModel.DictionaryId;
-            crossword.HorizontalSize = crosswordModel.Size.Width;
-            crossword.VerticalSize = crosswordModel.Size.Height;
+            crossword.Width = crosswordModel.Size.Width;
+            crossword.Height = crosswordModel.Size.Height;
             crossword.PromptCount = crosswordModel.PromptCount;
 
             var newCrosswordWords = crosswordModel.Words

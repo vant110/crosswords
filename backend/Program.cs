@@ -539,8 +539,8 @@ app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
             c.DictionaryId,
             size = new
             {
-                width = c.HorizontalSize,
-                height = c.VerticalSize
+                c.Width,
+                c.Height
             },
             c.PromptCount,
             words = c.CrosswordWords

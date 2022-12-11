@@ -23,8 +23,8 @@ namespace Crosswords.Models
                 CrosswordName = Name,
                 ThemeId = ThemeId,
                 DictionaryId = DictionaryId,
-                HorizontalSize = Size.Width,
-                VerticalSize = Size.Height,
+                Width = Size.Width,
+                Height = Size.Height,
                 PromptCount = PromptCount
             };
         }
