@@ -187,7 +187,23 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
         string name = request.Form["name"];
         var dictionaryFile = request.Form.Files["dictionary"];
 
-        var words = await fileService.ReadWordsAsync(dictionaryFile);
+        string encoding = "utf-8";
+        if (request.Form.TryGetValue("encoding", out var encodings)
+            && encodings[0] is not null)
+        {
+            encoding = encodings[0];
+        }
+
+        string separator = " ";
+        if (request.Form.TryGetValue("separator", out var separators)
+            && separators[0] is not null)
+        {
+            separator = separators[0];
+        }
+
+        bool skipInvalid = request.Form.ContainsKey("skipInvalid");
+
+        var words = await fileService.ReadWordsAsync(dictionaryFile, encoding, separator, skipInvalid);
         var id = await dbService.InsertDictionaryAsync(name, words);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);

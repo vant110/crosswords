@@ -6,8 +6,11 @@ namespace Crosswords.Services
     {
         #region Слово
 
-        [GeneratedRegex("^[А-Я]+$")]
+        [GeneratedRegex("^[А-ЯЁ]+$")]
         private static partial Regex WordNameRegex();
+
+        [GeneratedRegex("^[а-яА-ЯЁё(\"]")]
+        private static partial Regex DefinitionRegex();
 
         private const int MinWordNameLength = 3;
         private const int MaxWordNameLength = 15;
@@ -19,11 +22,11 @@ namespace Crosswords.Services
             message = null;
 
             if (input.Length < MinWordNameLength)
-                message = $"В строке {lineNumber} слово слишком короткое. Минимальное количество символов: {MinWordNameLength}";
+                message = $"В строке {lineNumber} слово '{input}' слишком короткое. Минимальное количество символов: {MinWordNameLength}";
             else if (input.Length > MaxWordNameLength)
-                message = $"В строке {lineNumber} слово слишком длинное. Максимальное количество символов: {MaxWordNameLength}";
+                message = $"В строке {lineNumber} слово '{input[..MaxWordNameLength]}...' слишком длинное. Максимальное количество символов: {MaxWordNameLength}";
             else if (!WordNameRegex().IsMatch(input))
-                message = $"В строке {lineNumber} слово содержит недопустимые символы. Допустимые символы: русский алфавит";
+                message = $"В строке {lineNumber} слово '{input}' содержит недопустимые символы. Допустимые символы: русский алфавит";
 
             return message is null;
         }
@@ -33,9 +36,11 @@ namespace Crosswords.Services
             message = null;
 
             if (input.Length < MinDefinitionLength)
-                message = $"В строке {lineNumber} определение слишком короткое. Минимальное количество символов: {MinDefinitionLength}";
+                message = $"В строке {lineNumber} определение '{input}' слишком короткое. Минимальное количество символов: {MinDefinitionLength}";
             else if (input.Length > MaxDefinitionLength)
-                message = $"В строке {lineNumber} определение слишком длинное. Максимальное количество символов: {MaxDefinitionLength}";
+                message = $"В строке {lineNumber} определение '{input[..MaxDefinitionLength]}...' слишком длинное. Максимальное количество символов: {MaxDefinitionLength}";
+            else if (!DefinitionRegex().IsMatch(input))
+                message = $"В строке {lineNumber} определение '{input}' начинается с недопустимого символа. Допустимые символы: русский алфавит, (, \"";
 
             return message is null;
         }
@@ -62,6 +67,8 @@ namespace Crosswords.Services
                 message = $"Определение слишком короткое. Минимальное количество символов: {MinDefinitionLength}";
             else if (input.Length > MaxDefinitionLength)
                 message = $"Определение слишком длинное. Максимальное количество символов: {MaxDefinitionLength}";
+            else if (!DefinitionRegex().IsMatch(input))
+                message = $"Определение начинается с недопустимого символа. Допустимые символы: русский алфавит, (, \"";
 
             return message is null;
         }
