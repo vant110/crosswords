@@ -726,7 +726,7 @@ app.MapGet("api/dictionaries/{dictionaryId}/generate_crossword", [Authorize(Role
             app.Logger.LogInformation(stringBuilder.ToString());
         }
 
-        return Results.Json(new { words = grid.ToCrosswordWordModels() });
+        return Results.Json(grid.ToCrosswordWordModels());
     }
     catch (ArgumentException ex)
     {
