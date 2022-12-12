@@ -1,0 +1,27 @@
+<main [formGroup]="loginForm">
+  <h1>Авторизация</h1>
+  <input nz-input placeholder="Логин" formControlName="login" />
+  <input
+    nz-input
+    placeholder="Пароль"
+    formControlName="password"
+    type="password"
+  />
+
+  <button
+    nz-button
+    nzType="primary"
+    [disabled]="isInvalid"
+    (click)="onSignin()"
+  >
+    Войти
+  </button>
+  <button
+    nz-button
+    nzType="default"
+    [disabled]="isInvalid"
+    (click)="onRegister()"
+  >
+    Зарегистироваться
+  </button>
+</main>
