@@ -11,6 +11,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Text;
 using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -521,7 +522,7 @@ app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
 
 #endregion
 
-#region ������������� - ����������
+#region Администратор - Кроссворды
 
 app.MapGet("api/themes/{themeId}/crosswords", [Authorize(Roles = "admin")] async (
     short themeId,
@@ -594,13 +595,13 @@ app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
                 "23503" => postgresException.ConstraintName is null
                     ? ex.Message
                     : postgresException.ConstraintName.Contains("theme_id")
-                        ? "���� �� �������"
+                        ? "Тема не найдена"
                         : postgresException.ConstraintName.Contains("dictionary_id")
-                            ? "������� �� ������"
+                            ? "Словарь не найден"
                             : postgresException.ConstraintName.Contains("word_id")
-                                ? "����� �� �������"
+                                ? "Слово не найдено"
                                 : ex.Message,
-                "23505" => "�������� ������",
+                "23505" => "Название занято",
                 _ => ex.Message
             };
 
@@ -627,7 +628,7 @@ app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (InvalidOperationException)
     {
-        return Results.BadRequest(new { message = "��������� �� ������" });
+        return Results.BadRequest(new { message = "Кроссворд не найден" });
     }
     catch (DbUpdateException ex)
     {
@@ -638,13 +639,13 @@ app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
                 "23503" => postgresException.ConstraintName is null
                     ? ex.Message
                     : postgresException.ConstraintName.Contains("theme_id")
-                        ? "���� �� �������"
+                        ? "Тема не найдена"
                         : postgresException.ConstraintName.Contains("dictionary_id")
-                            ? "������� �� ������"
+                            ? "Словарь не найден"
                             : postgresException.ConstraintName.Contains("word_id")
-                                ? "����� �� �������"
+                                ? "Слово не найдено"
                                 : ex.Message,
-                "23505" => "�������� ������",
+                "23505" => "Название занято",
                 _ => ex.Message
             };
 
@@ -672,7 +673,64 @@ app.MapDelete("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
     }
     catch (DbUpdateConcurrencyException)
     {
-        return Results.BadRequest(new { message = "��������� �� ������" });
+        return Results.BadRequest(new { message = "Кроссворд не найден" });
+    }
+    catch (Exception ex)
+    {
+        return Results.Problem(ex.Message);
+    }
+});
+
+app.MapGet("api/dictionaries/{dictionaryId}/generate_crossword", [Authorize(Roles = "admin")] async (
+    short dictionaryId,
+    int width,
+    int height,
+    CrosswordsContext db) =>
+{
+    try
+    {
+        int maxWordLength = width > height
+            ? width
+            : height;
+
+        var words = await db.Words
+            .Where(w => w.DictionaryId == dictionaryId
+                && w.WordName.Length <= maxWordLength)
+            .OrderByDescending(w => w.WordName.Length)
+            .Select(w => new Word
+            {
+                WordId = w.WordId,
+                WordName = w.WordName,
+                Definition = w.Definition
+            })
+            .ToListAsync();
+
+        var grid = new GridModel(width, height);
+
+        grid.GenerateCrossword(words);
+
+        if (app.Environment.IsDevelopment())
+        {
+            var stringBuilder = new StringBuilder();
+            for (int y = 0; y < grid.Height; y++)
+            {
+                for (int x = 0; x < grid.Width; x++)
+                {
+                    stringBuilder.Append(grid.Cells[x, y]);
+                }
+                if (y != grid.Height - 1)
+                {
+                    stringBuilder.AppendLine();
+                }
+            }
+            app.Logger.LogInformation(stringBuilder.ToString());
+        }
+
+        return Results.Json(new { words = grid.ToCrosswordWordModels() });
+    }
+    catch (ArgumentException ex)
+    {
+        return Results.BadRequest(new { ex.Message });
     }
     catch (Exception ex)
     {
