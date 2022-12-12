@@ -1,6 +1,6 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
-using Crosswords.Models;
+using Crosswords.Models.Client;
 using Microsoft.EntityFrameworkCore;
 
 namespace Crosswords.Services

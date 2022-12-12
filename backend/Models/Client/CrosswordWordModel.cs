@@ -1,14 +1,19 @@
 ﻿using Crosswords.Db.Models;
 
-namespace Crosswords.Models
+namespace Crosswords.Models.Client
 {
     public class CrosswordWordModel
     {
         public int Id { get; set; }
 
+        public string Name { get; set; }
+
+        public string Definition { get; set; }
+
         public PointModel<short> P1 { get; set; }
 
         public PointModel<short> P2 { get; set; }
+
 
         public CrosswordWord ToCrosswordWord(Crossword crossword)
         {
