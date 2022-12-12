@@ -1,24 +1,63 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
 nz-select {
   width: 166px;
+
+  &.word-sort {
+    width: 200px;
+  }
 }
 
 .dictionaries {
   display: flex;
   align-items: center;
   gap: 16px;
+}
 
-  span {
-    font-size: 24px;
-    color: var(--cw-gray);
-    cursor: pointer;
-    transition: all 0.3s;
+span[nz-icon] {
+  font-size: 24px;
+  color: var(--cw-gray);
+  cursor: pointer;
+  transition: all 0.3s;
 
-    &.delete:hover {
-      color: red;
-    }
+  &.search {
+    font-size: 16px;
+    pointer-events: none;
+  }
 
-    &:hover {
-      color: var(--cw-primary);
-    }
+  &.delete:hover {
+    color: red;
+  }
+
+  &:hover {
+    color: var(--cw-primary);
+  }
+}
+
+.words-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-top: 16px;
+  margin-bottom: 32px;
+
+  h2 {
+    margin: 0;
+  }
+
+  nz-input-group {
+    width: 166px;
+  }
+
+  .subsection {
+    display: flex;
+    align-items: center;
+    gap: 16px;
   }
 }

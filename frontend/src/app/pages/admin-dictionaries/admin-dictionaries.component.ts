@@ -1,12 +1,21 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
+import { NzTableComponent } from 'ng-zorro-antd/table';
 import { BehaviorSubject } from 'rxjs';
 import { Dictionary } from 'src/app/core/models/dictionary';
+import { DictionaryWord } from 'src/app/core/models/word';
 import { ApiService } from 'src/app/core/services/api.service';
 import { DictionaryAddComponent } from 'src/app/modals/dictionary-add/dictionary-add.component';
+
+enum WordSort {
+  ASC_APLHABET = 'ascAlphabet',
+  DESC_APLHABET = 'descAlphabet',
+  DESC_LENGTH = 'descLength',
+  ASC_LENGTH = 'ascLength',
+}
 
 @UntilDestroy()
 @Component({
@@ -14,14 +23,31 @@ import { DictionaryAddComponent } from 'src/app/modals/dictionary-add/dictionary
   templateUrl: './admin-dictionaries.component.html',
   styleUrls: ['./admin-dictionaries.component.scss'],
 })
-export class AdminDictionariesComponent {
+export class AdminDictionariesComponent implements AfterViewInit {
+  @ViewChild('wordsTable', { static: false })
+  nzTableComponent?: NzTableComponent<DictionaryWord>;
+
+  words$ = new BehaviorSubject<DictionaryWord[]>([]);
+
   dictionaries$ = new BehaviorSubject<Dictionary[]>([]);
   dictionariesForm = this.formBuilder.group({
     dictionary: [null],
   });
 
+  wordsForm = this.formBuilder.group({
+    search: [null],
+    sort: [WordSort.ASC_APLHABET],
+  });
+
+  sortOptions = [
+    { id: WordSort.ASC_APLHABET, name: 'По алфавиту (А-Я)' },
+    { id: WordSort.DESC_APLHABET, name: 'По алфавиту (Я-А)' },
+    { id: WordSort.ASC_LENGTH, name: 'По длине (возр.)' },
+    { id: WordSort.DESC_LENGTH, name: 'По длине (убыв.)' },
+  ];
+
   get selectedDictionary() {
-    return this.dictionariesForm.get('dictionary')?.value;
+    return this.dictionariesForm.get('dictionary')?.value as unknown as number;
   }
 
   constructor(
@@ -35,13 +61,33 @@ export class AdminDictionariesComponent {
     this.dictionariesForm
       .get('dictionary')
       ?.valueChanges.pipe(untilDestroyed(this))
-      .subscribe(console.log);
+      .subscribe((id) => {
+        const dictionaryId = id as unknown as number;
+        this.updateWords(dictionaryId);
+      });
   }
 
+  ngAfterViewInit(): void {
+    this.nzTableComponent?.cdkVirtualScrollViewport?.scrolledIndexChange
+      .pipe(untilDestroyed(this))
+      .subscribe((data: number) => {
+        console.log('scroll index to', data);
+      });
+  }
   updateDictionaries() {
     this.api
       .getDictionaries()
       .subscribe((result) => this.dictionaries$.next(result));
+  }
+
+  updateWords(dictionaryId: number) {
+    const filters = this.wordsForm.value;
+    const sort = filters.sort as WordSort;
+    const search = filters.search as unknown as string;
+
+    this.api
+      .getWords(dictionaryId, sort, search)
+      .subscribe((result) => this.words$.next(result));
   }
 
   onAddDictionary() {
@@ -133,5 +179,15 @@ export class AdminDictionariesComponent {
         this.notify.error('Ошибка', error.error.message);
       },
     );
+  }
+
+  onAddWord() {}
+
+  onEditWord() {}
+
+  onDeleteWord() {}
+
+  trackByIndex(_: number, data: DictionaryWord): number {
+    return data.id;
   }
 }

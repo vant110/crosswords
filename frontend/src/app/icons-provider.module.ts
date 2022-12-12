@@ -13,6 +13,8 @@ import {
   EditOutline,
   DeleteOutline,
   UploadOutline,
+  SearchOutline,
+  PlusOutline,
 } from '@ant-design/icons-angular/icons';
 
 const icons = [
@@ -27,6 +29,8 @@ const icons = [
   EditOutline,
   DeleteOutline,
   UploadOutline,
+  SearchOutline,
+  PlusOutline,
 ];
 
 @NgModule({
