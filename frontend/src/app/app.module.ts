@@ -8,7 +8,7 @@ import { ru_RU } from 'ng-zorro-antd/i18n';
 import { registerLocaleData } from '@angular/common';
 import ru from '@angular/common/locales/ru';
 import { FormsModule } from '@angular/forms';
-import { HttpClientModule } from '@angular/common/http';
+import { HttpClientModule, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { IconsProviderModule } from './icons-provider.module';
 import { NzLayoutModule } from 'ng-zorro-antd/layout';
@@ -18,7 +18,8 @@ import {
   NzNotificationService,
 } from 'ng-zorro-antd/notification';
 import { NzModalModule, NzModalService } from 'ng-zorro-antd/modal';
-import { ReferenceModule } from './shared/reference/reference.module';
+import { AuthInterceptor } from './core/interceptors/auth.interceptor';
+import { ModalsModule } from './modals/modals.module';
 
 registerLocaleData(ru);
 
@@ -36,10 +37,11 @@ registerLocaleData(ru);
     NzNotificationModule,
     NzModalModule,
 
-    ReferenceModule,
+    ModalsModule,
   ],
   providers: [
     { provide: NZ_I18N, useValue: ru_RU },
+    { provide: HTTP_INTERCEPTORS, useClass: AuthInterceptor, multi: true },
     NzModalService,
     NzNotificationService,
   ],

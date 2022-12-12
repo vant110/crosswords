@@ -1,0 +1,23 @@
+:host {
+  display: flex;
+  gap: 16px;
+}
+
+.upload-button {
+  display: flex;
+  align-items: center;
+  border: 1px solid rgb(77, 76, 76);
+  border-radius: 2px;
+  padding: 4px 16px;
+
+  cursor: pointer;
+
+  span {
+    font-size: 16px;
+    margin-right: 8px;
+  }
+
+  &:hover {
+    border-color: #1890ff;
+  }
+}

@@ -1,7 +1,7 @@
 import { Component } from '@angular/core';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { AuthService } from './core/services/auth.service';
-import { ReferenceComponent } from './shared/reference/reference.component';
+import { ReferenceComponent } from './modals/reference/reference.component';
 
 @Component({
   selector: 'app-root',

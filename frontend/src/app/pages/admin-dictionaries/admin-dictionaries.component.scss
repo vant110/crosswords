@@ -1,0 +1,24 @@
+nz-select {
+  width: 166px;
+}
+
+.dictionaries {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  span {
+    font-size: 24px;
+    color: var(--cw-gray);
+    cursor: pointer;
+    transition: all 0.3s;
+
+    &.delete:hover {
+      color: red;
+    }
+
+    &:hover {
+      color: var(--cw-primary);
+    }
+  }
+}

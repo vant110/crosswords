@@ -9,6 +9,10 @@ import {
   AppstoreOutline,
   QuestionCircleOutline,
   LogoutOutline,
+  FileAddOutline,
+  EditOutline,
+  DeleteOutline,
+  UploadOutline,
 } from '@ant-design/icons-angular/icons';
 
 const icons = [
@@ -19,6 +23,10 @@ const icons = [
   AppstoreOutline,
   QuestionCircleOutline,
   LogoutOutline,
+  FileAddOutline,
+  EditOutline,
+  DeleteOutline,
+  UploadOutline,
 ];
 
 @NgModule({

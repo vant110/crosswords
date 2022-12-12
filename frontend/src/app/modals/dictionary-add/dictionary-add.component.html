@@ -1,0 +1,15 @@
+<ng-container [formGroup]="form">
+  <input nz-input placeholder="Название словаря" formControlName="name" />
+  <label *ngIf="!isEdit" class="upload-button" for="file">
+    <input
+      id="file"
+      name="file"
+      type="file"
+      hidden
+      accept=".txt"
+      (change)="upload($event)"
+    />
+    <span nz-icon nzType="upload" nzTheme="outline"></span>
+    Upload
+  </label>
+</ng-container>

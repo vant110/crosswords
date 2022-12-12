@@ -1,1 +1,32 @@
-<p>admin-dictionaries works!</p>
+<section class="dictionaries" [formGroup]="dictionariesForm">
+  <nz-select
+    nzShowSearch
+    nzPlaceHolder="Выберите словарь"
+    formControlName="dictionary"
+  >
+    <nz-option
+      *ngFor="let item of dictionaries$ | async"
+      [nzLabel]="item.name"
+      [nzValue]="item.id"
+    ></nz-option
+  ></nz-select>
+  <span
+    nz-icon
+    nzType="file-add"
+    nzTheme="outline"
+    (click)="onAddDictionary()"
+  ></span>
+  <span
+    nz-icon
+    nzType="edit"
+    nzTheme="outline"
+    (click)="onEditDictionary()"
+  ></span>
+  <span
+    class="delete"
+    nz-icon
+    nzType="delete"
+    nzTheme="outline"
+    (click)="onDeleteDictionary()"
+  ></span>
+</section>
