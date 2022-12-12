@@ -1,6 +1,6 @@
 ﻿using Crosswords.Db.Models;
 
-namespace Crosswords.Models
+namespace Crosswords.Models.Client
 {
     public class CrosswordModel
     {

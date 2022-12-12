@@ -1,4 +1,4 @@
-﻿namespace Crosswords.Models
+﻿namespace Crosswords.Models.Client
 {
     public class PointModel<T>
     {
