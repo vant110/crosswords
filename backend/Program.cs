@@ -735,9 +735,29 @@ app.MapGet("api/themes/{themeId}/crosswords/unstarted", [Authorize(Roles = "play
     return Results.Json(await db.Crosswords
         .Where(c => c.ThemeId == themeId
             && !c.Saves
-                .Where(p => p.PlayerId == playerId)
+                .Where(s => s.PlayerId == playerId)
                 .Any()
-            && !c.Players // !!!
+            && !c.SolvedCrosswords
+                .Where(sc => sc.PlayerId == playerId)
+                .Any())
+        .Select(c => new
+        {
+            id = c.CrosswordId,
+            name = c.CrosswordName
+        })
+        .ToListAsync());
+});
+
+app.MapGet("api/themes/{themeId}/crosswords/started", [Authorize(Roles = "player")] async (
+    short themeId,
+    HttpContext context,
+    CrosswordsContext db) =>
+{
+    int playerId = int.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+    return Results.Json(await db.Crosswords
+        .Where(c => c.ThemeId == themeId
+            && c.Saves
                 .Where(p => p.PlayerId == playerId)
                 .Any())
         .Select(c => new
