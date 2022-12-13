@@ -4,7 +4,7 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { NzTableComponent } from 'ng-zorro-antd/table';
-import { BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, debounceTime, filter, switchMap, tap } from 'rxjs';
 import { Dictionary } from 'src/app/core/models/dictionary';
 import { DictionaryWord } from 'src/app/core/models/word';
 import { ApiService } from 'src/app/core/services/api.service';
@@ -46,6 +46,9 @@ export class AdminDictionariesComponent implements AfterViewInit {
     { id: WordSort.DESC_LENGTH, name: 'По длине (убыв.)' },
   ];
 
+  private _gridIndex = 0;
+  private _gridLoading = false;
+
   get selectedDictionary() {
     return this.dictionariesForm.get('dictionary')?.value as unknown as number;
   }
@@ -65,15 +68,57 @@ export class AdminDictionariesComponent implements AfterViewInit {
         const dictionaryId = id as unknown as number;
         this.updateWords(dictionaryId);
       });
+
+    this.wordsForm.valueChanges
+      .pipe(untilDestroyed(this), debounceTime(500))
+      .subscribe((value) => {
+        const sort = value.sort as WordSort;
+        const search = value.search as unknown as string;
+
+        this.api
+          .getWords(this.selectedDictionary, sort, search)
+          .subscribe((result) => {
+            this.nzTableComponent?.cdkVirtualScrollViewport?.scrollToIndex(0);
+            this.words$.next(result);
+          });
+      });
   }
 
   ngAfterViewInit(): void {
     this.nzTableComponent?.cdkVirtualScrollViewport?.scrolledIndexChange
-      .pipe(untilDestroyed(this))
-      .subscribe((data: number) => {
-        console.log('scroll index to', data);
+      .pipe(
+        untilDestroyed(this),
+        filter((index) => {
+          console.log(index);
+          this._gridIndex = index;
+          const loaded = this.words$.value.length;
+
+          return index > loaded - 25 && loaded >= 25 && !this._gridLoading;
+        }),
+        tap(() => (this._gridLoading = true)),
+        switchMap(() => {
+          const filters = this.wordsForm.value;
+          const loaded = this.words$.value.length;
+
+          const sort = filters.sort as WordSort;
+          const search = filters.search as unknown as string;
+          const lastLoaded = this.words$.value[loaded - 1];
+
+          return this.api.getWords(
+            this.selectedDictionary,
+            sort,
+            search,
+            lastLoaded.name,
+          );
+        }),
+      )
+      .subscribe((data) => {
+        this._gridLoading = false;
+        const loadedWords = this.words$.value;
+        this.words$.next([...loadedWords, ...data]);
       });
   }
+
   updateDictionaries() {
     this.api
       .getDictionaries()
