@@ -24,6 +24,8 @@ public partial class CrosswordsContext : DbContext
 
     public virtual DbSet<Save> Saves { get; set; }
 
+    public virtual DbSet<SolvedCrossword> SolvedCrosswords { get; set; }
+
     public virtual DbSet<Theme> Themes { get; set; }
 
     public virtual DbSet<Word> Words { get; set; }
@@ -41,10 +43,10 @@ public partial class CrosswordsContext : DbContext
             entity.Property(e => e.CrosswordId).HasColumnName("crossword_id");
             entity.Property(e => e.CrosswordName).HasColumnName("crossword_name");
             entity.Property(e => e.DictionaryId).HasColumnName("dictionary_id");
-            entity.Property(e => e.Width).HasColumnName("width");
+            entity.Property(e => e.Height).HasColumnName("height");
             entity.Property(e => e.PromptCount).HasColumnName("prompt_count");
             entity.Property(e => e.ThemeId).HasColumnName("theme_id");
-            entity.Property(e => e.Height).HasColumnName("height");
+            entity.Property(e => e.Width).HasColumnName("width");
 
             entity.HasOne(d => d.Dictionary).WithMany(p => p.Crosswords)
                 .HasForeignKey(d => d.DictionaryId)
@@ -94,12 +96,12 @@ public partial class CrosswordsContext : DbContext
 
         modelBuilder.Entity<Letter>(entity =>
         {
-            entity.HasKey(e => new { e.PlayerId, e.CrosswordId, e.X, e.Y }).HasName("letters_pkey");
+            entity.HasKey(e => new { e.CrosswordId, e.PlayerId, e.X, e.Y }).HasName("letters_pkey");
 
             entity.ToTable("letters");
 
-            entity.Property(e => e.PlayerId).HasColumnName("player_id");
             entity.Property(e => e.CrosswordId).HasColumnName("crossword_id");
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
             entity.Property(e => e.X).HasColumnName("x");
             entity.Property(e => e.Y).HasColumnName("y");
             entity.Property(e => e.LetterName)
@@ -107,8 +109,8 @@ public partial class CrosswordsContext : DbContext
                 .HasColumnName("letter_name");
 
             entity.HasOne(d => d.Save).WithMany(p => p.Letters)
-                .HasForeignKey(d => new { d.PlayerId, d.CrosswordId })
-                .HasConstraintName("letters_player_id_crossword_id_fkey");
+                .HasForeignKey(d => new { d.CrosswordId, d.PlayerId })
+                .HasConstraintName("letters_crossword_id_player_id_fkey");
         });
 
         modelBuilder.Entity<Player>(entity =>
@@ -122,31 +124,16 @@ public partial class CrosswordsContext : DbContext
             entity.Property(e => e.PlayerId).HasColumnName("player_id");
             entity.Property(e => e.Login).HasColumnName("login");
             entity.Property(e => e.PasswordHash).HasColumnName("password_hash");
-
-            entity.HasMany(d => d.Crosswords).WithMany(p => p.Players)
-                .UsingEntity<Dictionary<string, object>>(
-                    "SolvedCrossword",
-                    r => r.HasOne<Crossword>().WithMany()
-                        .HasForeignKey("crossword_id")
-                        .HasConstraintName("solved_crosswords_crossword_id_fkey"),
-                    l => l.HasOne<Player>().WithMany()
-                        .HasForeignKey("player_id")
-                        .HasConstraintName("solved_crosswords_player_id_fkey"),
-                    j =>
-                    {
-                        j.HasKey("player_id", "crossword_id").HasName("solved_crosswords_pkey");
-                        j.ToTable("solved_crosswords");
-                    });
         });
 
         modelBuilder.Entity<Save>(entity =>
         {
-            entity.HasKey(e => new { e.PlayerId, e.CrosswordId }).HasName("saves_pkey");
+            entity.HasKey(e => new { e.CrosswordId, e.PlayerId }).HasName("saves_pkey");
 
             entity.ToTable("saves");
 
-            entity.Property(e => e.PlayerId).HasColumnName("player_id");
             entity.Property(e => e.CrosswordId).HasColumnName("crossword_id");
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
             entity.Property(e => e.PromptCount).HasColumnName("prompt_count");
 
             entity.HasOne(d => d.Crossword).WithMany(p => p.Saves)
@@ -156,6 +143,24 @@ public partial class CrosswordsContext : DbContext
             entity.HasOne(d => d.Player).WithMany(p => p.Saves)
                 .HasForeignKey(d => d.PlayerId)
                 .HasConstraintName("saves_player_id_fkey");
+        });
+
+        modelBuilder.Entity<SolvedCrossword>(entity =>
+        {
+            entity.HasKey(e => new { e.CrosswordId, e.PlayerId }).HasName("solved_crosswords_pkey");
+
+            entity.ToTable("solved_crosswords");
+
+            entity.Property(e => e.CrosswordId).HasColumnName("crossword_id");
+            entity.Property(e => e.PlayerId).HasColumnName("player_id");
+
+            entity.HasOne(d => d.Crossword).WithMany(p => p.SolvedCrosswords)
+                .HasForeignKey(d => d.CrosswordId)
+                .HasConstraintName("solved_crosswords_crossword_id_fkey");
+
+            entity.HasOne(d => d.Player).WithMany(p => p.SolvedCrosswords)
+                .HasForeignKey(d => d.PlayerId)
+                .HasConstraintName("solved_crosswords_player_id_fkey");
         });
 
         modelBuilder.Entity<Theme>(entity =>

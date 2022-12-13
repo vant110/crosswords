@@ -171,8 +171,8 @@ namespace Crosswords.Services
                 .AsTracking()
                 .Where(c => c.CrosswordId == id)
                 .Include(c => c.CrosswordWords)
-                .Include(c => c.Saves) // !!!
-                .Include(c => c.Players) // !!!
+                .Include(c => c.Saves)
+                .Include(c => c.SolvedCrosswords)
                 .SingleAsync();
 
             crossword.CrosswordName = crosswordDTO.Name;
@@ -211,7 +211,7 @@ namespace Crosswords.Services
             _db.CrosswordWords.AddRange(newCrosswordWords);
 
             crossword.Saves.Clear();
-            crossword.Players.Clear();
+            crossword.SolvedCrosswords.Clear();
 
             await _db.SaveChangesAsync();
         }

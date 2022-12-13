@@ -25,7 +25,7 @@ public partial class Crossword
 
     public virtual ICollection<Save> Saves { get; } = new List<Save>();
 
-    public virtual Theme Theme { get; set; } = null!;
+    public virtual ICollection<SolvedCrossword> SolvedCrosswords { get; } = new List<SolvedCrossword>();
 
-    public virtual ICollection<Player> Players { get; } = new List<Player>();
+    public virtual Theme Theme { get; set; } = null!;
 }

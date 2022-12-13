@@ -5,9 +5,9 @@ namespace Crosswords.Db.Models;
 
 public partial class Letter
 {
-    public int PlayerId { get; set; }
-
     public short CrosswordId { get; set; }
+
+    public int PlayerId { get; set; }
 
     public short X { get; set; }
 

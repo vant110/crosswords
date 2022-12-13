@@ -13,5 +13,5 @@ public partial class Player
 
     public virtual ICollection<Save> Saves { get; } = new List<Save>();
 
-    public virtual ICollection<Crossword> Crosswords { get; } = new List<Crossword>();
+    public virtual ICollection<SolvedCrossword> SolvedCrosswords { get; } = new List<SolvedCrossword>();
 }
