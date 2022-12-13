@@ -169,6 +169,7 @@ app.MapGet("api/dictionaries", [Authorize(Roles = "admin")] async (
     CrosswordsContext db) =>
 {
     return Results.Json(await db.Dictionaries
+        .OrderBy(d => d.DictionaryName)
         .Select(d => new
         {
             id = d.DictionaryId,
@@ -430,6 +431,7 @@ app.MapGet("api/themes", [Authorize(Roles = "admin, player")] async (
     CrosswordsContext db) =>
 {
     return Results.Json(await db.Themes
+        .OrderBy(t => t.ThemeName)
         .Select(t => new
         {
             id = t.ThemeId,
@@ -517,6 +519,7 @@ app.MapGet("api/themes/{themeId}/crosswords", [Authorize(Roles = "admin")] async
 {
     return Results.Json(await db.Crosswords
         .Where(c => c.ThemeId == themeId)
+        .OrderBy(c => c.CrosswordName)
         .Select(c => new
         {
             id = c.CrosswordId,
@@ -541,6 +544,7 @@ app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
             },
             c.PromptCount,
             words = c.CrosswordWords
+                .OrderBy(cw => cw.Word.WordName)
                 .Select(cw => new
                 {
                     id = cw.WordId,
@@ -740,6 +744,7 @@ app.MapGet("api/themes/{themeId}/crosswords/unstarted", [Authorize(Roles = "play
             && !c.SolvedCrosswords
                 .Where(sc => sc.PlayerId == playerId)
                 .Any())
+        .OrderBy(c => c.CrosswordName)
         .Select(c => new
         {
             id = c.CrosswordId,
@@ -760,6 +765,7 @@ app.MapGet("api/themes/{themeId}/crosswords/started", [Authorize(Roles = "player
             && c.Saves
                 .Where(p => p.PlayerId == playerId)
                 .Any())
+        .OrderBy(c => c.CrosswordName)
         .Select(c => new
         {
             id = c.CrosswordId,
