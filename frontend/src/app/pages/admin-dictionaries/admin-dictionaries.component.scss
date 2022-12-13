@@ -61,3 +61,7 @@ span[nz-icon] {
     gap: 16px;
   }
 }
+
+tr.selected {
+  background-color: rgb(185, 223, 223) !important;
+}

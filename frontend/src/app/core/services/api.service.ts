@@ -56,4 +56,8 @@ export class ApiService {
       { params },
     );
   }
+
+  deleteWord(id: number) {
+    return this.http.delete(`/api/words/${id}`);
+  }
 }

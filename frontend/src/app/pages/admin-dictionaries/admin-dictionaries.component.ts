@@ -46,6 +46,8 @@ export class AdminDictionariesComponent implements AfterViewInit {
     { id: WordSort.DESC_LENGTH, name: 'По длине (убыв.)' },
   ];
 
+  selectedRow: number = -1;
+
   private _gridIndex = 0;
   private _gridLoading = false;
 
@@ -230,7 +232,21 @@ export class AdminDictionariesComponent implements AfterViewInit {
 
   onEditWord() {}
 
-  onDeleteWord() {}
+  onDeleteWord() {
+    this.api.deleteWord(this.selectedRow).subscribe(
+      () => {
+        this.notify.success('Успех', `Слово успешно удалено`);
+        this.updateWords(this.selectedDictionary);
+      },
+      (error) => {
+        this.notify.error('Ошибка', error.error.message);
+      },
+    );
+  }
+
+  onRowClick(id: number) {
+    this.selectedRow = id;
+  }
 
   trackByIndex(_: number, data: DictionaryWord): number {
     return data.id;

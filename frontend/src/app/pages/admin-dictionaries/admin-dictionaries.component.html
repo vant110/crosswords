@@ -85,7 +85,10 @@
   </thead>
   <tbody>
     <ng-template nz-virtual-scroll let-data let-index="index">
-      <tr>
+      <tr
+        [class.selected]="selectedRow === data.id"
+        (click)="onRowClick(data.id)"
+      >
         <td>{{ data.name }}</td>
         <td>{{ data.definition }}</td>
       </tr>
