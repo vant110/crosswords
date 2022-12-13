@@ -1,7 +1,7 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
 using Crosswords.Models;
-using Crosswords.Models.Client;
+using Crosswords.Models.DTOs;
 using Crosswords.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
@@ -58,7 +58,7 @@ app.UseCors(builder => builder.AllowAnyOrigin());
 #region Пользователь
 
 app.MapPost("api/auth/signup", async (
-    HttpRequest request,
+    UserDTO user,
     PasswordHasher<Player> passwordHasher,
     DbService dbService) =>
 {
@@ -66,8 +66,6 @@ app.MapPost("api/auth/signup", async (
 
     try
     {
-        var user = await request.ReadFromJsonAsync<UserModel>();
-
         if (user.Login == app.Configuration["Admin:Login"])
             return Results.BadRequest(new { Message });
 
@@ -100,7 +98,7 @@ app.MapPost("api/auth/signup", async (
 });
 
 app.MapPost("api/auth/signin", async (
-    HttpRequest request,
+    UserDTO user,
     PasswordHasher<Player> passwordHasher,
     DbService dbService) =>
 {
@@ -108,7 +106,6 @@ app.MapPost("api/auth/signin", async (
 
     try
     {
-        var user = await request.ReadFromJsonAsync<UserModel>();
         bool isAdmin;
         var claims = new List<Claim>();
 
@@ -227,13 +224,11 @@ app.MapPost("api/dictionaries", [Authorize(Roles = "admin")] async (
 
 app.MapPatch("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
     short id,
-    HttpRequest request,
+    DictionaryDTO dictionary,
     DbService dbService) =>
 {
     try
     {
-        var dictionary = await request.ReadFromJsonAsync<DictionaryModel>();
-
         await dbService.UpdateDictionaryAsync(id, dictionary.Name);
 
         return Results.NoContent();
@@ -349,13 +344,11 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
 
 app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")] async (
     short dictionaryId,
-    HttpRequest request,
+    WordDTO word,
     DbService dbService) =>
 {
     try
     {
-        var word = await request.ReadFromJsonAsync<WordModel>();
-
         var id = await dbService.InsertWordAsync(dictionaryId, word.Name, word.Definition);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
@@ -382,13 +375,11 @@ app.MapPost("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")
 
 app.MapPatch("api/words/{id}", [Authorize(Roles = "admin")] async (
     int id,
-    HttpRequest request,
+    WordDTO word,
     DbService dbService) =>
 {
     try
     {
-        var word = await request.ReadFromJsonAsync<WordModel>();
-
         await dbService.UpdateWordAsync(id, word.Definition);
 
         return Results.NoContent();
@@ -448,13 +439,11 @@ app.MapGet("api/themes", [Authorize(Roles = "admin")] async (
 });
 
 app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
-    HttpRequest request,
+    ThemeDTO theme,
     DbService dbService) =>
 {
     try
     {
-        var theme = await request.ReadFromJsonAsync<ThemeModel>();
-
         var id = await dbService.InsertThemeAsync(theme.Name);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
@@ -471,13 +460,11 @@ app.MapPost("api/themes", [Authorize(Roles = "admin")] async (
 
 app.MapPut("api/themes/{id}", [Authorize(Roles = "admin")] async (
     short id,
-    HttpRequest request,
+    ThemeDTO theme,
     DbService dbService) =>
 {
     try
     {
-        var theme = await request.ReadFromJsonAsync<ThemeModel>();
-
         await dbService.UpdateThemeAsync(id, theme.Name);
 
         return Results.NoContent();
@@ -575,13 +562,11 @@ app.MapGet("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
 });
 
 app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
-    HttpRequest request,
+    CrosswordDTO crossword,
     DbService dbService) =>
 {
     try
     {
-        var crossword = await request.ReadFromJsonAsync<CrosswordModel>();
-
         var id = await dbService.InsertCrosswordAsync(crossword);
 
         return Results.Json(new { id }, statusCode: StatusCodes.Status201Created);
@@ -615,13 +600,11 @@ app.MapPost("api/crosswords", [Authorize(Roles = "admin")] async (
 
 app.MapPut("api/crosswords/{id}", [Authorize(Roles = "admin")] async (
     short id,
-    HttpRequest request,
+    CrosswordDTO crossword,
     DbService dbService) =>
 {
     try
     {
-        var crossword = await request.ReadFromJsonAsync<CrosswordModel>();
-
         await dbService.UpdateCrosswordAsync(id, crossword);
 
         return Results.NoContent();
@@ -726,7 +709,7 @@ app.MapGet("api/dictionaries/{dictionaryId}/generate_crossword", [Authorize(Role
             app.Logger.LogInformation(stringBuilder.ToString());
         }
 
-        return Results.Json(grid.ToCrosswordWordModels());
+        return Results.Json(grid.ToCrosswordWordDTOs());
     }
     catch (ArgumentException ex)
     {

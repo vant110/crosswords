@@ -1,6 +1,6 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
-using Crosswords.Models.Client;
+using Crosswords.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
 
 namespace Crosswords.Services
@@ -153,19 +153,19 @@ namespace Crosswords.Services
 
         #region Администратор - Кроссворды
 
-        public async Task<short> InsertCrosswordAsync(CrosswordModel crosswordModel)
+        public async Task<short> InsertCrosswordAsync(CrosswordDTO crosswordDTO)
         {
-            var crossword = crosswordModel.ToCrossword();
+            var crossword = crosswordDTO.ToCrossword();
             _db.Crosswords.Add(crossword);
 
-            _db.CrosswordWords.AddRange(crosswordModel.Words
+            _db.CrosswordWords.AddRange(crosswordDTO.Words
                 .Select(w => w.ToCrosswordWord(crossword)));
 
             await _db.SaveChangesAsync();
             return crossword.CrosswordId;
         }
 
-        public async Task UpdateCrosswordAsync(short id, CrosswordModel crosswordModel)
+        public async Task UpdateCrosswordAsync(short id, CrosswordDTO crosswordDTO)
         {
             var crossword = await _db.Crosswords
                 .AsTracking()
@@ -175,14 +175,14 @@ namespace Crosswords.Services
                 .Include(c => c.Players) // !!!
                 .SingleAsync();
 
-            crossword.CrosswordName = crosswordModel.Name;
-            crossword.ThemeId = crosswordModel.ThemeId;
-            crossword.DictionaryId = crosswordModel.DictionaryId;
-            crossword.Width = crosswordModel.Size.Width;
-            crossword.Height = crosswordModel.Size.Height;
-            crossword.PromptCount = crosswordModel.PromptCount;
+            crossword.CrosswordName = crosswordDTO.Name;
+            crossword.ThemeId = crosswordDTO.ThemeId;
+            crossword.DictionaryId = crosswordDTO.DictionaryId;
+            crossword.Width = crosswordDTO.Size.Width;
+            crossword.Height = crosswordDTO.Size.Height;
+            crossword.PromptCount = crosswordDTO.PromptCount;
 
-            var newCrosswordWords = crosswordModel.Words
+            var newCrosswordWords = crosswordDTO.Words
                 .Select(w => w.ToCrosswordWord(crossword))
                 .ToList();
             foreach (var cw in crossword.CrosswordWords)

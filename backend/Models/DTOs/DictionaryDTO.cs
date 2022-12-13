@@ -1,6 +1,6 @@
-﻿namespace Crosswords.Models.Client
+﻿namespace Crosswords.Models.DTOs
 {
-    public class ThemeModel
+    public class DictionaryDTO
     {
         public string Name { get; set; } = null!;
 

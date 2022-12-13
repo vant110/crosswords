@@ -1,5 +1,5 @@
 ﻿using Crosswords.Db.Models;
-using Crosswords.Models.Client;
+using Crosswords.Models.DTOs;
 using Crosswords.Models.Enums;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -115,7 +115,7 @@ namespace Crosswords.Models
         {
             void AddWord(Word word, SideEnum orientation, int constIdx, int firstIdx, int lastIdx)
             {
-                void AddWord(Word word, PointModel<int> p1, PointModel<int> p2)
+                void AddWord(Word word, PointDTO<int> p1, PointDTO<int> p2)
                 {
                     CellModel cell;
 
@@ -224,8 +224,8 @@ namespace Crosswords.Models
                 }
 
 
-                var p1 = new PointModel<int>();
-                var p2 = new PointModel<int>();
+                var p1 = new PointDTO<int>();
+                var p2 = new PointDTO<int>();
                 switch (orientation)
                 {
                     case SideEnum.Up:
@@ -337,9 +337,9 @@ namespace Crosswords.Models
             }
         }
 
-        public List<CrosswordWordModel> ToCrosswordWordModels()
+        public List<CrosswordWordDTO> ToCrosswordWordDTOs()
         {
-            var crosswordWordModels = new Dictionary<int, CrosswordWordModel>();
+            var crosswordWordDTOs = new Dictionary<int, CrosswordWordDTO>();
 
             for (int x = 0; x < Width; x++)
             {
@@ -349,21 +349,21 @@ namespace Crosswords.Models
 
                     var word = cell.HWord;
                     if (word is not null
-                        && !crosswordWordModels.ContainsKey(word.WordId))
+                        && !crosswordWordDTOs.ContainsKey(word.WordId))
                     {
-                        crosswordWordModels.Add(
+                        crosswordWordDTOs.Add(
                             word.WordId,
-                            new CrosswordWordModel
+                            new CrosswordWordDTO
                             {
                                 Id = word.WordId,
                                 Name = word.WordName,
                                 Definition = word.Definition,
-                                P1 = new PointModel<short>
+                                P1 = new PointDTO<short>
                                 {
                                     X = (short)(x - cell.HLetterIndex),
                                     Y = (short)y
                                 },
-                                P2 = new PointModel<short>
+                                P2 = new PointDTO<short>
                                 {
                                     X = (short)(x + (word.WordName.Length - cell.HLetterIndex - 1)),
                                     Y = (short)y
@@ -373,21 +373,21 @@ namespace Crosswords.Models
 
                     word = cell.VWord;
                     if (word is not null
-                        && !crosswordWordModels.ContainsKey(word.WordId))
+                        && !crosswordWordDTOs.ContainsKey(word.WordId))
                     {
-                        crosswordWordModels.Add(
+                        crosswordWordDTOs.Add(
                             word.WordId,
-                            new CrosswordWordModel
+                            new CrosswordWordDTO
                             {
                                 Id = word.WordId,
                                 Name = word.WordName,
                                 Definition = word.Definition,
-                                P1 = new PointModel<short>
+                                P1 = new PointDTO<short>
                                 {
                                     X = (short)x,
                                     Y = (short)(y - cell.VLetterIndex)
                                 },
-                                P2 = new PointModel<short>
+                                P2 = new PointDTO<short>
                                 {
                                     X = (short)x,
                                     Y = (short)(y + (word.WordName.Length - cell.VLetterIndex - 1))
@@ -397,7 +397,7 @@ namespace Crosswords.Models
                 }
             }
 
-            return crosswordWordModels
+            return crosswordWordDTOs
                 .OrderBy(cwm => cwm.Value.Name)
                 .Select(cwm => cwm.Value)
                 .ToList();

@@ -1,6 +1,6 @@
-﻿namespace Crosswords.Models.Client
+﻿namespace Crosswords.Models.DTOs
 {
-    public class SizeModel<T>
+    public class SizeDTO<T>
     {
         public T Width { get; set; }
         public T Height { get; set; }

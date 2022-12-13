@@ -1,8 +1,8 @@
 ﻿using Crosswords.Db.Models;
 
-namespace Crosswords.Models.Client
+namespace Crosswords.Models.DTOs
 {
-    public class CrosswordWordModel
+    public class CrosswordWordDTO
     {
         public int Id { get; set; }
 
@@ -10,9 +10,9 @@ namespace Crosswords.Models.Client
 
         public string Definition { get; set; }
 
-        public PointModel<short> P1 { get; set; }
+        public PointDTO<short> P1 { get; set; }
 
-        public PointModel<short> P2 { get; set; }
+        public PointDTO<short> P2 { get; set; }
 
 
         public CrosswordWord ToCrosswordWord(Crossword crossword)
