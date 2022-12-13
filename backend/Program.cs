@@ -723,6 +723,34 @@ app.MapGet("api/dictionaries/{dictionaryId}/generate_crossword", [Authorize(Role
 
 #endregion
 
+#region Игрок - Кроссворды
+
+app.MapGet("api/themes/{themeId}/crosswords/unstarted", [Authorize(Roles = "player")] async (
+    short themeId,
+    HttpContext context,
+    CrosswordsContext db) =>
+{
+    int playerId = int.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+    return Results.Json(await db.Crosswords
+        .Where(c => c.ThemeId == themeId
+            && !c.Saves
+                .Where(p => p.PlayerId == playerId)
+                .Any()
+            && !c.Players // !!!
+                .Where(p => p.PlayerId == playerId)
+                .Any())
+        .Select(c => new
+        {
+            id = c.CrosswordId,
+            name = c.CrosswordName
+        })
+        .ToListAsync());
+});
+
+
+#endregion
+
 app.MapGet("api/user", [Authorize] () => "User");
 app.MapGet("api/admin", [Authorize(Roles = "admin")] () => "Admin");
 app.MapGet("api/player", [Authorize(Roles = "player")] () => "Player");
