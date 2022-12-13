@@ -426,7 +426,7 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
 
 #region Администратор - Темы
 
-app.MapGet("api/themes", [Authorize(Roles = "admin")] async (
+app.MapGet("api/themes", [Authorize(Roles = "admin, player")] async (
     CrosswordsContext db) =>
 {
     return Results.Json(await db.Themes
