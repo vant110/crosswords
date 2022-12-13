@@ -21,8 +21,8 @@ export class WordAddComponent {
   }
 
   form = this.formBuilder.group({
-    word: ['', [Validators.required]],
-    definition: ['', [Validators.required]],
+    word: ['', [Validators.required, Validators.minLength(3)]],
+    definition: ['', [Validators.required, Validators.minLength(10)]],
   });
 
   constructor(private formBuilder: FormBuilder, private modalRef: NzModalRef) {
