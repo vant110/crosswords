@@ -57,6 +57,17 @@ export class ApiService {
     );
   }
 
+  createWord(dictionaryId: number, name: string, definition: string) {
+    return this.http.post(`/api/dictionaries/${dictionaryId}/words`, {
+      name,
+      definition,
+    });
+  }
+
+  editWord(id: number, definition: string) {
+    return this.http.patch(`/api/words/${id}`, { definition });
+  }
+
   deleteWord(id: number) {
     return this.http.delete(`/api/words/${id}`);
   }

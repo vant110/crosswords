@@ -5,9 +5,10 @@ import { DictionaryAddComponent } from './dictionary-add/dictionary-add.componen
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { WordAddComponent } from './word-add/word-add.component';
 
 @NgModule({
-  declarations: [ReferenceComponent, DictionaryAddComponent],
+  declarations: [ReferenceComponent, DictionaryAddComponent, WordAddComponent],
   imports: [
     CommonModule,
     NzIconModule,
@@ -15,6 +16,6 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
     FormsModule,
     ReactiveFormsModule,
   ],
-  exports: [ReferenceComponent, DictionaryAddComponent],
+  exports: [ReferenceComponent, DictionaryAddComponent, WordAddComponent],
 })
 export class ModalsModule {}

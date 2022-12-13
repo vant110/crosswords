@@ -1,0 +1,9 @@
+<ng-container [formGroup]="form">
+  <input *ngIf="!isEdit" nz-input placeholder="Слово" formControlName="word" />
+  <textarea
+    nz-input
+    placeholder="Определение"
+    nzAutosize
+    formControlName="definition"
+  ></textarea>
+</ng-container>

@@ -9,6 +9,7 @@ import { Dictionary } from 'src/app/core/models/dictionary';
 import { DictionaryWord } from 'src/app/core/models/word';
 import { ApiService } from 'src/app/core/services/api.service';
 import { DictionaryAddComponent } from 'src/app/modals/dictionary-add/dictionary-add.component';
+import { WordAddComponent } from 'src/app/modals/word-add/word-add.component';
 
 enum WordSort {
   ASC_APLHABET = 'ascAlphabet',
@@ -228,9 +229,80 @@ export class AdminDictionariesComponent implements AfterViewInit {
     );
   }
 
-  onAddWord() {}
+  onAddWord() {
+    if (!this.selectedRow) return;
 
-  onEditWord() {}
+    this.modal.create({
+      nzContent: WordAddComponent,
+      nzTitle: 'Добавить слово',
+      nzOkText: 'Сохранить',
+      nzCancelText: 'Отмена',
+      nzWidth: 420,
+      nzOkDisabled: true,
+      nzOnOk: (instance: WordAddComponent) => this.createWord(instance),
+    });
+  }
+
+  private createWord(instance: WordAddComponent) {
+    return new Promise((resolve) => {
+      const data = instance.form.value;
+
+      this.api
+        .createWord(
+          this.selectedDictionary,
+          data.word as string,
+          data.definition as string,
+        )
+        .subscribe(
+          () => {
+            this.notify.success('Успех', `Слово успешно создано`);
+            this.updateWords(this.selectedDictionary);
+            resolve(true);
+          },
+          (error) => {
+            this.notify.error('Ошибка', error.error.message);
+            resolve(true);
+          },
+        );
+    });
+  }
+
+  onEditWord() {
+    if (!this.selectedRow) return;
+    const word = this.words$.value.find((item) => item.id === this.selectedRow);
+
+    this.modal.create({
+      nzContent: WordAddComponent,
+      nzComponentParams: {
+        isEdit: true,
+        word,
+      },
+      nzTitle: 'Изменить слово',
+      nzOkText: 'Сохранить',
+      nzCancelText: 'Отмена',
+      nzWidth: 420,
+      nzOkDisabled: true,
+      nzOnOk: (instance: WordAddComponent) => this.editWord(instance),
+    });
+  }
+
+  private editWord(instance: WordAddComponent) {
+    return new Promise((resolve) => {
+      const data = instance.form.value;
+
+      this.api.editWord(this.selectedRow, data.definition as string).subscribe(
+        () => {
+          this.notify.success('Успех', `Слово успешно изменено`);
+          this.updateWords(this.selectedDictionary);
+          resolve(true);
+        },
+        (error) => {
+          this.notify.error('Ошибка', error.error.message);
+          resolve(true);
+        },
+      );
+    });
+  }
 
   onDeleteWord() {
     this.api.deleteWord(this.selectedRow).subscribe(
