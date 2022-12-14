@@ -684,36 +684,35 @@ app.MapGet("api/dictionaries/{dictionaryId}/generate_crossword", [Authorize(Role
             .Where(w => w.DictionaryId == dictionaryId
                 && w.WordName.Length <= maxWordLength)
             .OrderByDescending(w => w.WordName.Length)
-            .Select(w => new Word
+            .Select(w => new WordModel
             {
-                WordId = w.WordId,
-                WordName = w.WordName,
+                Id = w.WordId,
+                Name = w.WordName,
                 Definition = w.Definition
             })
             .ToListAsync();
 
-        var grid = new GridModel(width, height);
+        var crossword = new CrosswordModel(width, height);
 
-        grid.GenerateCrossword(words);
+        crossword.Generate(words);
+
+        var crosswordWordDTOs = crossword.ToCrosswordWordDTOs();
 
         if (app.Environment.IsDevelopment())
         {
-            var stringBuilder = new StringBuilder();
-            for (int y = 0; y < grid.Height; y++)
+            var stringBuilder = new StringBuilder($"Количество слов: {crosswordWordDTOs.Count}");
+            for (int y = 0; y < crossword.Height; y++)
             {
-                for (int x = 0; x < grid.Width; x++)
+                stringBuilder.AppendLine();
+                for (int x = 0; x < crossword.Width; x++)
                 {
-                    stringBuilder.Append(grid.Cells[x, y]);
-                }
-                if (y != grid.Height - 1)
-                {
-                    stringBuilder.AppendLine();
+                    stringBuilder.Append(crossword.Cells[x, y]);
                 }
             }
             app.Logger.LogInformation(stringBuilder.ToString());
         }
 
-        return Results.Json(grid.ToCrosswordWordDTOs());
+        return Results.Json(crosswordWordDTOs);
     }
     catch (ArgumentException ex)
     {
@@ -772,6 +771,107 @@ app.MapGet("api/themes/{themeId}/crosswords/started", [Authorize(Roles = "player
             name = c.CrosswordName
         })
         .ToListAsync());
+});
+
+app.MapGet("api/crosswords/{id}/unstarted", [Authorize(Roles = "player")] async (
+    short id,
+    HttpContext context,
+    CrosswordsContext db) =>
+{
+    int playerId = int.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+    try
+    {
+        return Results.Json(await db.Crosswords
+            .Where(c => c.CrosswordId == id)
+            .Select(c => new
+            {
+                size = new
+                {
+                    c.Width,
+                    c.Height
+                },
+                c.PromptCount,
+                words = c.CrosswordWords
+                    .OrderBy(cw => cw.Word.Definition)
+                    .Select(cw => new
+                    {
+                        id = cw.WordId,
+                        cw.Word.Definition,
+                        p1 = new
+                        {
+                            x = cw.X1,
+                            y = cw.Y1,
+                        },
+                        p2 = new
+                        {
+                            x = cw.X2,
+                            y = cw.Y2,
+                        }
+                    })
+                    .ToList()
+            })
+            .SingleAsync());
+    }
+    catch (InvalidOperationException)
+    {
+        return Results.BadRequest(new { message = "Кроссворд не найден" });
+    }
+});
+
+app.MapGet("api/crosswords/{id}/started", [Authorize(Roles = "player")] async (
+    short id,
+    HttpContext context,
+    CrosswordsContext db) =>
+{
+    int playerId = int.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
+
+    try
+    {
+        return Results.Json(await db.Saves
+            .Where(s => s.CrosswordId == id
+                && s.PlayerId == playerId)
+            .Select(s => new
+            {
+                size = new
+                {
+                    s.Crossword.Width,
+                    s.Crossword.Height
+                },
+                s.PromptCount,
+                words = s.Crossword.CrosswordWords
+                    .OrderBy(cw => cw.Word.Definition)
+                    .Select(cw => new
+                    {
+                        id = cw.WordId,
+                        cw.Word.Definition,
+                        p1 = new
+                        {
+                            x = cw.X1,
+                            y = cw.Y1,
+                        },
+                        p2 = new
+                        {
+                            x = cw.X2,
+                            y = cw.Y2,
+                        }
+                    })
+                    .ToList(),
+                grid = s.Letters
+                    .Select(l => new
+                    {
+                        l.X,
+                        l.Y,
+                        l = l.LetterName
+                    })
+                    .ToList()
+            })
+            .SingleAsync());
+    }
+    catch (InvalidOperationException)
+    {
+        return Results.BadRequest(new { message = "Сохранение не найдено" });
+    }
 });
 
 

@@ -12,10 +12,12 @@ namespace Crosswords.Services
         [GeneratedRegex("^[А-ЯЁ(\"]")]
         private static partial Regex DefinitionRegex();
 
-        private const int MinWordNameLength = 3;
-        private const int MaxWordNameLength = 15;
-        private const int MinDefinitionLength = 10;
-        private const int MaxDefinitionLength = 200;
+
+        public static readonly int MinWordNameLength = 3;
+        public static readonly int MaxWordNameLength = 15;
+        public static readonly int MinDefinitionLength = 10;
+        public static readonly int MaxDefinitionLength = 200;
+
 
         public bool IsFileWordName(string input, int lineNumber, out string? message)
         {
