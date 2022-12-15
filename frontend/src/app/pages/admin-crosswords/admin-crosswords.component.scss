@@ -1,0 +1,35 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.themes {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+nz-select {
+  width: 166px;
+}
+
+span[nz-icon] {
+  font-size: 24px;
+  color: var(--cw-gray);
+  cursor: pointer;
+  transition: all 0.3s;
+
+  &.search {
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  &.delete:hover {
+    color: red;
+  }
+
+  &:hover {
+    color: var(--cw-primary);
+  }
+}

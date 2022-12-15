@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthResponse } from '../models/auth';
 import { Dictionary } from '../models/dictionary';
+import { CrosswordTheme } from '../models/theme';
 import { DictionaryWord } from '../models/word';
 
 @Injectable({ providedIn: 'root' })
@@ -70,5 +71,21 @@ export class ApiService {
 
   deleteWord(id: number) {
     return this.http.delete(`/api/words/${id}`);
+  }
+
+  getThemes() {
+    return this.http.get<CrosswordTheme[]>('/api/themes');
+  }
+
+  createTheme(name: string) {
+    return this.http.post('/api/themes', { name });
+  }
+
+  putTheme(id: number, name: string) {
+    return this.http.put(`/api/themes/${id}`, { name });
+  }
+
+  deleteTheme(id: number) {
+    return this.http.delete(`/api/themes/${id}`);
   }
 }

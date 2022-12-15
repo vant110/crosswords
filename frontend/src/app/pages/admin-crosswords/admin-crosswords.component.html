@@ -1,1 +1,23 @@
-<p>admin-crosswords works!</p>
+<section class="themes" [formGroup]="themesForm">
+  <nz-select nzShowSearch nzPlaceHolder="Выберите тему" formControlName="theme">
+    <nz-option
+      *ngFor="let item of themes$ | async"
+      [nzLabel]="item.name"
+      [nzValue]="item.id"
+    ></nz-option
+  ></nz-select>
+  <span
+    nz-icon
+    nzType="file-add"
+    nzTheme="outline"
+    (click)="onAddTheme()"
+  ></span>
+  <span nz-icon nzType="edit" nzTheme="outline" (click)="onEditTheme()"></span>
+  <span
+    class="delete"
+    nz-icon
+    nzType="delete"
+    nzTheme="outline"
+    (click)="onDeleteTheme()"
+  ></span>
+</section>

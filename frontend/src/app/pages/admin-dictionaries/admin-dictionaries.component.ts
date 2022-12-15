@@ -92,7 +92,6 @@ export class AdminDictionariesComponent implements AfterViewInit {
       .pipe(
         untilDestroyed(this),
         filter((index) => {
-          console.log(index);
           this._gridIndex = index;
           const loaded = this.words$.value.length;
 
@@ -174,9 +173,10 @@ export class AdminDictionariesComponent implements AfterViewInit {
 
   onEditDictionary() {
     if (!this.selectedDictionary) return;
-    const id = this.selectedDictionary as any;
 
-    const name = this.dictionaries$.value.find((item) => item.id === id)?.name;
+    const name = this.dictionaries$.value.find(
+      (item) => item.id === this.selectedDictionary,
+    )?.name;
 
     this.modal.create({
       nzContent: DictionaryAddComponent,
@@ -197,7 +197,7 @@ export class AdminDictionariesComponent implements AfterViewInit {
   private editDictionary(instance: DictionaryAddComponent) {
     return new Promise((resolve) => {
       const name = instance.form.value.name as string;
-      const id = this.selectedDictionary as any;
+      const id = this.selectedDictionary;
 
       this.api.editDictionary(id, name).subscribe(
         () => {
@@ -215,9 +215,8 @@ export class AdminDictionariesComponent implements AfterViewInit {
 
   onDeleteDictionary() {
     if (!this.selectedDictionary) return;
-    const id = this.selectedDictionary as any;
 
-    this.api.deleteDictionary(id).subscribe(
+    this.api.deleteDictionary(this.selectedDictionary).subscribe(
       () => {
         this.notify.success('Успех', `Словарь успешно удален`);
         this.updateDictionaries();

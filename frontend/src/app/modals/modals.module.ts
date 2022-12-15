@@ -6,9 +6,15 @@ import { NzIconModule } from 'ng-zorro-antd/icon';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { WordAddComponent } from './word-add/word-add.component';
+import { ThemeAddComponent } from './theme-add/theme-add.component';
 
 @NgModule({
-  declarations: [ReferenceComponent, DictionaryAddComponent, WordAddComponent],
+  declarations: [
+    ReferenceComponent,
+    DictionaryAddComponent,
+    WordAddComponent,
+    ThemeAddComponent,
+  ],
   imports: [
     CommonModule,
     NzIconModule,
@@ -16,6 +22,11 @@ import { WordAddComponent } from './word-add/word-add.component';
     FormsModule,
     ReactiveFormsModule,
   ],
-  exports: [ReferenceComponent, DictionaryAddComponent, WordAddComponent],
+  exports: [
+    ReferenceComponent,
+    DictionaryAddComponent,
+    WordAddComponent,
+    ThemeAddComponent,
+  ],
 })
 export class ModalsModule {}

@@ -79,7 +79,7 @@
 >
   <thead>
     <tr>
-      <th>Слово</th>
+      <th nzWidth="220px">Слово</th>
       <th>Определение</th>
     </tr>
   </thead>
@@ -89,7 +89,7 @@
         [class.selected]="selectedRow === data.id"
         (click)="onRowClick(data.id)"
       >
-        <td>{{ data.name }}</td>
+        <td nzWidth="220px">{{ data.name }}</td>
         <td>{{ data.definition }}</td>
       </tr>
     </ng-template>
