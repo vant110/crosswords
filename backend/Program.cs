@@ -290,11 +290,15 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
         var words = db.Words
             .Where(w => w.DictionaryId == dictionaryId);
 
+        MaskModel? maskModel = null;
         if (mask is not null)
         {
-            mask = $"^{mask.ToUpperInvariant()}$";
+            maskModel = new MaskModel
+            {
+                Full = mask.ToUpper()
+            };
 
-            words = words.Where(w => Regex.IsMatch(w.WordName, mask));
+            words = words.Where(w => Regex.IsMatch(w.WordName, maskModel.Pattern));
         }
 
         if (search is not null)
@@ -327,15 +331,35 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
             };
         }
 
-        return Results.Json(await words
-            .Take(limit)
-            .Select(w => new
+        words = words.Take(limit);
+
+        if (maskModel is not null)
+        {
+            return Results.Json(await words.Select(w => new
+            {
+                id = w.WordId,
+                name = w.WordName,
+                definition = w.Definition,
+                offset = maskModel.Left == null
+                    ? 0
+                    : maskModel.Left.Length - Regex.Match(w.WordName, maskModel.Pattern).Groups[1].Index
+            })
+            .ToListAsync(),
+            new System.Text.Json.JsonSerializerOptions
+            {
+                DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingDefault
+            });
+        }
+        else
+        {
+            return Results.Json(await words.Select(w => new
             {
                 id = w.WordId,
                 name = w.WordName,
                 definition = w.Definition
             })
             .ToListAsync());
+        }
     }
     catch (Exception ex)
     {

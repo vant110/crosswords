@@ -466,8 +466,8 @@ namespace Crosswords.Models
             if (isFirstWord)
             {
                 int maxWordLength = orientation == SideEnum.Up | orientation == SideEnum.Down
-                        ? Width
-                        : Height;
+                    ? Width
+                    : Height;
 
                 int randomCount;
                 {
@@ -502,10 +502,11 @@ namespace Crosswords.Models
                     if (word is null)
                         continue;
 
-                    int maskBodyIdx = Regex.Match(mask.Full, mask.Pattern).Groups[1].Index;
-                    int wordBodyIdx = Regex.Match(word.Name, mask.Pattern).Groups[1].Index;
+                    int offset = mask.Left is null
+                        ? 0
+                        : mask.Left.Length - Regex.Match(word.Name, mask.Pattern).Groups[1].Index;
 
-                    int firstIdx = mask.Index + maskBodyIdx - wordBodyIdx;
+                    int firstIdx = mask.Index + offset;
                     int lastIdx = firstIdx + word.Name.Length - 1;
 
                     AddWord(word, orientation, constIdx, firstIdx, lastIdx);
