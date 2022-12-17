@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthResponse } from '../models/auth';
+import { Crossword, CrosswordList } from '../models/crossword';
 import { Dictionary } from '../models/dictionary';
 import { CrosswordTheme } from '../models/theme';
 import { DictionaryWord } from '../models/word';
@@ -87,5 +88,25 @@ export class ApiService {
 
   deleteTheme(id: number) {
     return this.http.delete(`/api/themes/${id}`);
+  }
+
+  getCrosswordsList(themeId: number) {
+    return this.http.get<CrosswordList[]>(`/api/themes/${themeId}/crosswords`);
+  }
+
+  getCrossword(id: number) {
+    return this.http.get<Crossword>(`/api/crosswords/${id}`);
+  }
+
+  createCrossword(crossword: Crossword) {
+    return this.http.post<{ id: number }>('/api/crosswords', crossword);
+  }
+
+  putCrossword(crossword: Crossword, id: number) {
+    return this.http.put(`/api/crosswords/${id}`, crossword);
+  }
+
+  deleteCrossword(id: number) {
+    return this.http.delete(`/api/crosswords/${id}`);
   }
 }

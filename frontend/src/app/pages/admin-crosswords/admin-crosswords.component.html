@@ -21,3 +21,71 @@
     (click)="onDeleteTheme()"
   ></span>
 </section>
+
+<section
+  *ngIf="selectedThemeId"
+  class="crossword-header"
+  [formGroup]="crosswordsForm"
+>
+  <div class="subsection">
+    <h2>Кроссворды</h2>
+    <nz-select
+      nzShowSearch
+      nzPlaceHolder="Выберите кроссворд"
+      formControlName="crossword"
+    >
+      <nz-option
+        *ngFor="let item of crosswords$ | async"
+        [nzLabel]="item.name"
+        [nzValue]="item.id"
+      ></nz-option
+    ></nz-select>
+  </div>
+
+  <div class="subsection">
+    <span
+      nz-icon
+      nzType="plus"
+      nzTheme="outline"
+      (click)="onAddCrossword()"
+    ></span>
+    <span
+      nz-icon
+      nzType="edit"
+      nzTheme="outline"
+      (click)="onEditCrossword()"
+    ></span>
+    <span
+      class="delete"
+      nz-icon
+      nzType="delete"
+      nzTheme="outline"
+      (click)="onDeleteCrosword()"
+    ></span>
+  </div>
+</section>
+
+<section
+  *ngIf="selectedCrossword$ | async as crossword"
+  class="selected-crossword"
+>
+  <p *ngIf="crosswordDictionaryName$ | async as name">
+    Словарь: <span>{{ name }}</span>
+  </p>
+  <p>
+    Размер:
+    <span>{{ crossword.size.width }} x {{ crossword.size.height }}</span>
+  </p>
+  <p>
+    Подсказок:
+    <span>{{ crossword.promptCount }}</span>
+  </p>
+  <div class="crossword-buttons">
+    <button nz-button nzType="default" (click)="onGenerateCrossword()">
+      Сгенерировать
+    </button>
+    <button nz-button nzType="primary" (click)="onSaveCrossword()">
+      Сохранить
+    </button>
+  </div>
+</section>

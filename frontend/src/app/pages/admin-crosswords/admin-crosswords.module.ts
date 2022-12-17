@@ -6,6 +6,8 @@ import { NzSelectModule } from 'ng-zorro-antd/select';
 import { NzIconModule } from 'ng-zorro-antd/icon';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzInputModule } from 'ng-zorro-antd/input';
+import { NzTableModule } from 'ng-zorro-antd/table';
+import { NzButtonModule } from 'ng-zorro-antd/button';
 
 const routes: Routes = [{ path: '', component: AdminCrosswordsComponent }];
 
@@ -18,6 +20,8 @@ const routes: Routes = [{ path: '', component: AdminCrosswordsComponent }];
     ReactiveFormsModule,
     FormsModule,
     NzInputModule,
+    NzTableModule,
+    NzButtonModule,
   ],
   declarations: [AdminCrosswordsComponent],
 })

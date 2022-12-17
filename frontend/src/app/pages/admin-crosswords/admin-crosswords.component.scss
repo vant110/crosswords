@@ -11,7 +11,7 @@
 }
 
 nz-select {
-  width: 166px;
+  width: 200px;
 }
 
 span[nz-icon] {
@@ -31,5 +31,55 @@ span[nz-icon] {
 
   &:hover {
     color: var(--cw-primary);
+  }
+}
+
+.crossword-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+
+  margin-top: 16px;
+
+  h2 {
+    margin: 0;
+  }
+
+  nz-input-group {
+    width: 166px;
+  }
+
+  .subsection {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+}
+
+.selected-crossword {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-top: 16px;
+  margin-bottom: 32px;
+
+  p {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  span {
+    font-weight: 400;
+  }
+
+  .crossword-buttons {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    margin-left: auto;
   }
 }

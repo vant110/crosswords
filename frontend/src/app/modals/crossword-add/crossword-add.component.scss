@@ -1,0 +1,15 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.dimensions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  nz-input-number {
+    width: 60px;
+  }
+}
