@@ -89,3 +89,26 @@
     </button>
   </div>
 </section>
+
+<section class="crossword-content">
+  <nz-table
+    #crosswordTable
+    *ngIf="crosswordMatrix$ | async as crosswordMatrix"
+    class="crossword-table"
+    nzBordered
+    nzTableLayout="fixed"
+    nzSize="small"
+    [style.width.px]="crosswordMatrix | crosswordWidth"
+    [nzData]="crosswordMatrix"
+    [nzShowPagination]="false"
+    [nzFrontPagination]="false"
+  >
+    <tbody>
+      <tr *ngFor="let data of crosswordTable.data; let y = index">
+        <td *ngFor="let letter of data; let x = index" nzAlign="center">
+          {{ letter }}
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</section>

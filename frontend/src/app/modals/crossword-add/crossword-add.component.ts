@@ -47,5 +47,11 @@ export class CrosswordAddComponent implements OnInit {
     if (!this.crossword) return;
 
     this.form.patchValue(this.crossword);
+
+    const letterCount = this.crossword.words.reduce(
+      (accumulator, value) => accumulator + value.name.length,
+      0,
+    );
+    this.maxPromptCount = Math.round(letterCount * 0.1);
   }
 }

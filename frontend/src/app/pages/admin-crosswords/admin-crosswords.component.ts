@@ -4,7 +4,11 @@ import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { BehaviorSubject, map, Observable, switchMap } from 'rxjs';
-import { Crossword, CrosswordList } from 'src/app/core/models/crossword';
+import {
+  Crossword,
+  CrosswordList,
+  CrosswordWord,
+} from 'src/app/core/models/crossword';
 import { Dictionary } from 'src/app/core/models/dictionary';
 import { CrosswordTheme } from 'src/app/core/models/theme';
 import { ApiService } from 'src/app/core/services/api.service';
@@ -29,9 +33,11 @@ export class AdminCrosswordsComponent {
   });
 
   selectedCrossword$ = new BehaviorSubject<Crossword | null>(null);
+  crosswordMatrix$ = new BehaviorSubject<string[][]>([[]]);
   crosswordDictionaryName$: Observable<string>;
 
   private _dictionaries!: Dictionary[];
+  private _words: CrosswordWord[] = [];
 
   get selectedThemeId() {
     return this.themesForm.get('theme')?.value as unknown as number;
@@ -51,11 +57,8 @@ export class AdminCrosswordsComponent {
       .get('theme')
       ?.valueChanges.pipe(untilDestroyed(this))
       .subscribe((themeId) => {
-        this.crosswordsForm
-          .get('crossword')
-          ?.setValue(null, { emitEvent: false });
-        this.selectedCrossword$.next(null);
         this.updateCrosswordsList(themeId as unknown as number);
+        this.deselectCrossword();
       });
 
     this.crosswordsForm
@@ -66,7 +69,14 @@ export class AdminCrosswordsComponent {
           this.api.getCrossword(crosswordId as unknown as number),
         ),
       )
-      .subscribe((crossword) => this.selectedCrossword$.next(crossword));
+      .subscribe((crossword) => {
+        this.updateCrossword(
+          crossword.size.height,
+          crossword.size.width,
+          crossword.words,
+        );
+        this.selectedCrossword$.next(crossword);
+      });
 
     this.api
       .getDictionaries()
@@ -81,6 +91,45 @@ export class AdminCrosswordsComponent {
     );
 
     this.updateThemes();
+  }
+
+  private updateCrossword(
+    height: number,
+    width: number,
+    words: CrosswordWord[],
+  ) {
+    this._words = words;
+
+    const matrix: string[][] = [];
+    for (let index = 0; index < height; index++) {
+      matrix[index] = new Array(width);
+    }
+
+    for (const word of words) {
+      if (word.p1.x !== word.p2.x) this.writeVerticalWord(matrix, word);
+
+      if (word.p1.y !== word.p2.y) this.writeHorizontalWord(matrix, word);
+    }
+
+    this.crosswordMatrix$.next(matrix);
+    const printMatrix = matrix.map((d) => d.join('\t')).join('\n');
+    console.log(printMatrix);
+  }
+
+  private writeVerticalWord(matrix: string[][], word: CrosswordWord) {
+    for (let index = 0; index < word.name.length; index++) {
+      const y = word.p1.y;
+      const x = word.p2.x > word.p1.x ? word.p1.x + index : word.p1.x - index;
+      matrix[y][x] = word.name[index];
+    }
+  }
+
+  private writeHorizontalWord(matrix: string[][], word: CrosswordWord) {
+    for (let index = 0; index < word.name.length; index++) {
+      const y = word.p2.y > word.p1.y ? word.p1.y + index : word.p1.y - index;
+      const x = word.p1.x;
+      matrix[y][x] = word.name[index];
+    }
   }
 
   onAddTheme() {
@@ -234,7 +283,11 @@ export class AdminCrosswordsComponent {
   private editCrossword(instance: CrosswordAddComponent) {
     return new Promise((resolve) => {
       const crossword = instance.form.value as Crossword;
-      crossword.words = this.selectedCrossword$.value?.words || [];
+      const selectedCrossword = this.selectedCrossword$.value;
+      crossword.words =
+        selectedCrossword?.dictionaryId === crossword.dictionaryId
+          ? selectedCrossword?.words || []
+          : [];
 
       this.api.putCrossword(crossword, this.selectedCrosswordId).subscribe(
         () => {
@@ -243,6 +296,7 @@ export class AdminCrosswordsComponent {
             `Кроссворд ${crossword.name} успешно изменен`,
           );
           this.updateCrosswordsList(this.selectedThemeId);
+          this.selectedCrossword$.next(crossword);
           resolve(true);
         },
         (error) => {
@@ -260,10 +314,7 @@ export class AdminCrosswordsComponent {
       () => {
         this.notify.success('Успех', 'Кроссворд успешно удален');
         this.updateCrosswordsList(this.selectedThemeId);
-        this.crosswordsForm
-          .get('crossword')
-          ?.setValue(null, { emitEvent: false });
-        this.selectedCrossword$.next(null);
+        this.deselectCrossword();
       },
       (error) => {
         this.notify.error('Ошибка', error.error.message);
@@ -271,7 +322,22 @@ export class AdminCrosswordsComponent {
     );
   }
 
-  onGenerateCrossword() {}
+  onGenerateCrossword() {
+    const selectedCrossword = this.selectedCrossword$.value;
+    const width = selectedCrossword?.size.width ?? 0;
+    const height = selectedCrossword?.size.height ?? 0;
+
+    this.api
+      .generateCrossword(width, height, selectedCrossword?.dictionaryId ?? 0)
+      .subscribe(
+        (result) => {
+          this.updateCrossword(height, width, result);
+        },
+        (error) => {
+          this.notify.error('Ошибка', error.error.message);
+        },
+      );
+  }
 
   onSaveCrossword() {}
 
@@ -283,5 +349,11 @@ export class AdminCrosswordsComponent {
     this.api
       .getCrosswordsList(themeId)
       .subscribe((result) => this.crosswords$.next(result));
+  }
+
+  private deselectCrossword() {
+    this.crosswordsForm.get('crossword')?.setValue(null, { emitEvent: false });
+    this.selectedCrossword$.next(null);
+    this.crosswordMatrix$.next([[]]);
   }
 }

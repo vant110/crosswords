@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthResponse } from '../models/auth';
-import { Crossword, CrosswordList } from '../models/crossword';
+import { Crossword, CrosswordList, CrosswordWord } from '../models/crossword';
 import { Dictionary } from '../models/dictionary';
 import { CrosswordTheme } from '../models/theme';
 import { DictionaryWord } from '../models/word';
@@ -108,5 +108,12 @@ export class ApiService {
 
   deleteCrossword(id: number) {
     return this.http.delete(`/api/crosswords/${id}`);
+  }
+
+  generateCrossword(width: number, height: number, dictionaryId: number) {
+    return this.http.get<CrosswordWord[]>(
+      `/api/dictionaries/${dictionaryId}/generate_crossword`,
+      { params: { width, height } },
+    );
   }
 }

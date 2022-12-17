@@ -8,6 +8,7 @@ import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
+import { CrosswordWidthPipe } from './crossword-width.pipe';
 
 const routes: Routes = [{ path: '', component: AdminCrosswordsComponent }];
 
@@ -23,6 +24,6 @@ const routes: Routes = [{ path: '', component: AdminCrosswordsComponent }];
     NzTableModule,
     NzButtonModule,
   ],
-  declarations: [AdminCrosswordsComponent],
+  declarations: [AdminCrosswordsComponent, CrosswordWidthPipe],
 })
 export class AdminCrosswordsModule {}

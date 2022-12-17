@@ -63,7 +63,6 @@ span[nz-icon] {
   gap: 16px;
 
   margin-top: 16px;
-  margin-bottom: 32px;
 
   p {
     font-size: 16px;
@@ -81,5 +80,17 @@ span[nz-icon] {
     gap: 8px;
 
     margin-left: auto;
+  }
+}
+
+.crossword-content {
+  overflow: auto;
+  margin-top: 16px;
+}
+
+nz-table.crossword-table {
+  td {
+    padding: 4px;
+    height: 31px;
   }
 }
