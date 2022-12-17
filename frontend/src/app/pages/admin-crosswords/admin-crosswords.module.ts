@@ -9,6 +9,7 @@ import { NzInputModule } from 'ng-zorro-antd/input';
 import { NzTableModule } from 'ng-zorro-antd/table';
 import { NzButtonModule } from 'ng-zorro-antd/button';
 import { CrosswordWidthPipe } from './crossword-width.pipe';
+import { IsSelectedPipe } from './is-selected.pipe';
 
 const routes: Routes = [{ path: '', component: AdminCrosswordsComponent }];
 
@@ -24,6 +25,6 @@ const routes: Routes = [{ path: '', component: AdminCrosswordsComponent }];
     NzTableModule,
     NzButtonModule,
   ],
-  declarations: [AdminCrosswordsComponent, CrosswordWidthPipe],
+  declarations: [AdminCrosswordsComponent, CrosswordWidthPipe, IsSelectedPipe],
 })
 export class AdminCrosswordsModule {}

@@ -10,6 +10,7 @@ import {
   CrosswordWord,
 } from 'src/app/core/models/crossword';
 import { Dictionary } from 'src/app/core/models/dictionary';
+import { SelectedPoint } from 'src/app/core/models/selected-point';
 import { CrosswordTheme } from 'src/app/core/models/theme';
 import { ApiService } from 'src/app/core/services/api.service';
 import { CrosswordAddComponent } from 'src/app/modals/crossword-add/crossword-add.component';
@@ -35,6 +36,9 @@ export class AdminCrosswordsComponent {
   selectedCrossword$ = new BehaviorSubject<Crossword | null>(null);
   crosswordMatrix$ = new BehaviorSubject<string[][]>([[]]);
   crosswordDictionaryName$: Observable<string>;
+
+  selectedCell: SelectedPoint = { x: null, y: null };
+  selectedEndCell: SelectedPoint = { x: null, y: null };
 
   private _dictionaries!: Dictionary[];
   private _words: CrosswordWord[] = [];
@@ -82,6 +86,7 @@ export class AdminCrosswordsComponent {
           crossword.words,
         );
       });
+
     this.api
       .getDictionaries()
       .subscribe((result) => (this._dictionaries = result));
@@ -116,8 +121,8 @@ export class AdminCrosswordsComponent {
     }
 
     this.crosswordMatrix$.next(matrix);
-    const printMatrix = matrix.map((d) => d.join('\t')).join('\n');
-    console.log(printMatrix);
+    // const printMatrix = matrix.map((d) => d.join('\t')).join('\n');
+    // console.log(printMatrix);
   }
 
   private writeVerticalWord(matrix: string[][], word: CrosswordWord) {
@@ -134,6 +139,21 @@ export class AdminCrosswordsComponent {
       const x = word.p1.x;
       matrix[y][x] = word.name[index];
     }
+  }
+
+  cellClick(y: number, x: number) {
+    if (y === this.selectedCell.y || x === this.selectedCell.x) {
+      this.selectedEndCell = { y, x };
+      console.log('end cell selected', this.selectedCell, this.selectedEndCell);
+      return;
+    }
+    this.selectedCell = { y, x };
+    this.selectedEndCell = { y: null, x: null };
+    console.log('start cell selected', this.selectedCell);
+  }
+
+  cellDoubleclick() {
+    console.log('dbl');
   }
 
   onAddTheme() {
@@ -349,7 +369,31 @@ export class AdminCrosswordsComponent {
       );
   }
 
-  onSaveCrossword() {}
+  onSaveCrossword() {
+    if (!this.selectedCrossword$.value || !this.selectedCrosswordId) return;
+
+    const crossword: Crossword = {
+      ...this.selectedCrossword$.value,
+      words: this._words,
+    };
+    crossword.themeId = this.selectedThemeId;
+    crossword.name =
+      this.crosswords$.value.find(
+        (item) => item.id === this.selectedCrosswordId,
+      )?.name || '';
+
+    this.api.putCrossword(crossword, this.selectedCrosswordId).subscribe(
+      () => {
+        this.notify.success(
+          'Успех',
+          `Кроссворд ${crossword.name} успешно сохранен`,
+        );
+      },
+      (error) => {
+        this.notify.error('Ошибка', error.error.message);
+      },
+    );
+  }
 
   private updateThemes() {
     this.api.getThemes().subscribe((result) => this.themes$.next(result));

@@ -105,7 +105,18 @@
   >
     <tbody>
       <tr *ngFor="let data of crosswordTable.data; let y = index">
-        <td *ngFor="let letter of data; let x = index" nzAlign="center">
+        <td
+          *ngFor="let letter of data; let x = index"
+          nzAlign="center"
+          [class.selected]="
+            [y, x] | isSelected : selectedCell : selectedEndCell
+          "
+          [class.selected-potential]="
+            y === selectedCell.y || x === selectedCell.x
+          "
+          (click)="cellClick(y, x)"
+          (dblclick)="cellDoubleclick()"
+        >
           {{ letter }}
         </td>
       </tr>

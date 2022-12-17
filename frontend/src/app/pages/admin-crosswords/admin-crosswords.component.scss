@@ -93,4 +93,17 @@ nz-table.crossword-table {
     padding: 4px;
     height: 31px;
   }
+
+  // tr:hover td {
+  //   background-color: inherit;
+  // }
+
+  td.selected {
+    background-color: #44a4ff !important;
+  }
+
+  td.selected-potential:hover {
+    cursor: pointer;
+    background-color: #b1daff;
+  }
 }
