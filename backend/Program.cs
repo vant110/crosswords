@@ -1,6 +1,5 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
-using Crosswords.Extensions;
 using Crosswords.Models;
 using Crosswords.Models.DTOs;
 using Crosswords.Services;
@@ -345,7 +344,7 @@ app.MapGet("api/dictionaries/{dictionaryId}/words", [Authorize(Roles = "admin")]
                 id = w.WordId,
                 name = w.WordName,
                 definition = w.Definition,
-                offset = maskModel.Left == null
+                offset = maskModel.Left == null || maskModel.Body == null
                     ? 0
                     : maskModel.Left.Length - Regex.Match(w.WordName, maskModel.Pattern).Groups[1].Index
             })
@@ -814,11 +813,7 @@ app.MapGet("api/crosswords/{id}/unstarted", [Authorize(Roles = "player")] async 
 
     try
     {
-        string key = $"{playerId}-{id}";
-
         var crossword = await dbService.SelectUnstartedCrosswordAsync(id);
-
-        context.Session.Set(key, crossword);
 
         return Results.Json(new
         {
@@ -852,47 +847,39 @@ app.MapGet("api/crosswords/{id}/started", [Authorize(Roles = "player")] async (
 {
     int playerId = int.Parse(context.User.FindFirst(ClaimTypes.NameIdentifier).Value);
 
-    try
-    {
-        string key = $"{playerId}-{id}";
+    var crossword = await dbService.SelectStartedCrosswordAsync(id, playerId);
 
-        var crossword = await dbService.SelectStartedCrosswordAsync(id, playerId);
-
-        context.Session.Set(key, crossword);
-
-        return Results.Json(new
-        {
-            size = new
-            {
-                crossword.Width,
-                crossword.Height
-            },
-            crossword.PromptCount,
-            words = crossword.CrosswordWordDTOs
-                .OrderBy(cwDTO => cwDTO.Definition)
-                .Select(cwDTO => new
-                {
-                    cwDTO.Id,
-                    cwDTO.Definition,
-                    cwDTO.P1,
-                    cwDTO.P2,
-                    isSolved = cwDTO.P1.X < cwDTO.P2.X
-                        ? crossword.Cells[cwDTO.P1.X][cwDTO.P1.Y].HWord.IsSolved
-                        : crossword.Cells[cwDTO.P1.X][cwDTO.P1.Y].VWord.IsSolved
-                }),
-            grid = crossword.Letters
-                .Select(l => new
-                {
-                    l.X,
-                    l.Y,
-                    l = l.LetterName
-                })
-        });
-    }
-    catch (InvalidOperationException)
-    {
+    if (crossword is null)
         return Results.BadRequest(new { message = "Сохранение не найдено" });
-    }
+
+    return Results.Json(new
+    {
+        size = new
+        {
+            crossword.Width,
+            crossword.Height
+        },
+        crossword.PromptCount,
+        words = crossword.CrosswordWordDTOs
+            .OrderBy(cwDTO => cwDTO.Definition)
+            .Select(cwDTO => new
+            {
+                cwDTO.Id,
+                cwDTO.Definition,
+                cwDTO.P1,
+                cwDTO.P2,
+                isSolved = cwDTO.P1.X < cwDTO.P2.X
+                    ? crossword.Cells[cwDTO.P1.X][cwDTO.P1.Y].HWord.IsSolved
+                    : crossword.Cells[cwDTO.P1.X][cwDTO.P1.Y].VWord.IsSolved
+            }),
+        grid = crossword.Letters
+            .Select(l => new
+            {
+                l.X,
+                l.Y,
+                l = l.LetterName
+            })
+    });
 });
 
 app.MapGet("api/crosswords/{id}/take_prompt", [Authorize(Roles = "player")] async (
@@ -906,15 +893,8 @@ app.MapGet("api/crosswords/{id}/take_prompt", [Authorize(Roles = "player")] asyn
 
     try
     {
-        string key = $"{playerId}-{id}";
-
-        var crossword = context.Session.Get<CrosswordModel>(key);
-        if (crossword is null)
-        {
-            crossword = await dbService.SelectStartedCrosswordAsync(id, playerId);
-
-            context.Session.Set(key, crossword);
-        }
+        CrosswordModel crossword = await dbService.SelectStartedCrosswordAsync(id, playerId)
+            ?? await dbService.SelectUnstartedCrosswordAsync(id);
 
         if (crossword.PromptCount == 0)
             return Results.BadRequest(new { message = "Подсказка недоступна" });
@@ -930,7 +910,7 @@ app.MapGet("api/crosswords/{id}/take_prompt", [Authorize(Roles = "player")] asyn
         bool? isPreviouslySolvedHWord = cell.HWord?.IsSolved;
         bool? isPreviouslySolvedVWord = cell.VWord?.IsSolved;
 
-        bool hasPreviousInput = cell.Input != char.MinValue;
+        bool hasPreviousInput = cell.Input != default;
 
         cell.SetInput(letter);
         crossword.PromptCount--;
@@ -957,27 +937,20 @@ app.MapGet("api/crosswords/{id}/take_prompt", [Authorize(Roles = "player")] asyn
             && crossword.IsSolved())
         {
             await dbService.InsertSolvedCrosswordAsync(id, playerId);
+        }
+        else if (!crossword.IsStarted)
+        {
+            await dbService.InsertSaveAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
 
-            context.Session.Remove(key);
+            crossword.IsStarted = true;
+        }
+        else if (hasPreviousInput)
+        {
+            await dbService.UpdatePromptedLetterAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
         }
         else
         {
-            if (!crossword.IsStarted)
-            {
-                await dbService.InsertSaveAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
-
-                crossword.IsStarted = true;
-            }
-            else if (hasPreviousInput)
-            {
-                await dbService.UpdatePromptedLetterAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
-            }
-            else
-            {
-                await dbService.InsertPromptedLetterAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
-            }
-
-            context.Session.Set(key, crossword);
+            await dbService.InsertPromptedLetterAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
         }
 
         return Results.Json(new
@@ -989,10 +962,6 @@ app.MapGet("api/crosswords/{id}/take_prompt", [Authorize(Roles = "player")] asyn
                     id
                 })
         });
-    }
-    catch (InvalidOperationException)
-    {
-        return Results.BadRequest(new { message = "Сохранение не найдено" });
     }
     catch (ArgumentException ex)
     {
@@ -1012,15 +981,8 @@ app.MapGet("api/crosswords/{id}/change_letter", [Authorize(Roles = "player")] as
 
     try
     {
-        string key = $"{playerId}-{id}";
-
-        var crossword = context.Session.Get<CrosswordModel>(key);
-        if (crossword is null)
-        {
-            crossword = await dbService.SelectStartedCrosswordAsync(id, playerId);
-
-            context.Session.Set(key, crossword);
-        }
+        CrosswordModel crossword = await dbService.SelectStartedCrosswordAsync(id, playerId)
+            ?? await dbService.SelectUnstartedCrosswordAsync(id);
 
         var cell = crossword.Cells[x][y];
 
@@ -1031,7 +993,7 @@ app.MapGet("api/crosswords/{id}/change_letter", [Authorize(Roles = "player")] as
         bool? isPreviouslySolvedHWord = cell.HWord?.IsSolved;
         bool? isPreviouslySolvedVWord = cell.VWord?.IsSolved;
 
-        bool hasPreviousInput = cell.Input != char.MinValue;
+        bool hasPreviousInput = cell.Input != default;
 
         letter = char.ToUpper(letter);
         cell.SetInput(letter);
@@ -1058,34 +1020,28 @@ app.MapGet("api/crosswords/{id}/change_letter", [Authorize(Roles = "player")] as
             && crossword.IsSolved())
         {
             await dbService.InsertSolvedCrosswordAsync(id, playerId);
-
-            context.Session.Remove(key);
         }
-        else
+        else if (!crossword.IsStarted)
         {
-            if (!crossword.IsStarted)
-            {
-                await dbService.InsertSaveAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
+            await dbService.InsertSaveAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
 
-                crossword.IsStarted = true;
-            }
-            else if (hasPreviousInput)
+            crossword.IsStarted = true;
+        }
+        else if (hasPreviousInput)
+        {
+            if (letter == ' ')
             {
-                if (letter == '\0')
-                {
-                    await dbService.DeleteLetterAsync(id, playerId, x, y);
-                }
-                else
-                {
-                    await dbService.UpdateLetterAsync(id, playerId, x, y, letter);
-                }
+                await dbService.DeleteLetterAsync(id, playerId, x, y);
+                cell.Input = default;
             }
             else
             {
-                await dbService.InsertLetterAsync(id, playerId, x, y, letter);
+                await dbService.UpdateLetterAsync(id, playerId, x, y, letter);
             }
-
-            context.Session.Set(key, crossword);
+        }
+        else
+        {
+            await dbService.InsertLetterAsync(id, playerId, x, y, letter);
         }
 
         return Results.Json(new
@@ -1096,10 +1052,6 @@ app.MapGet("api/crosswords/{id}/change_letter", [Authorize(Roles = "player")] as
                     id
                 })
         });
-    }
-    catch (InvalidOperationException)
-    {
-        return Results.BadRequest(new { message = "Сохранение не найдено" });
     }
     catch (ArgumentException ex)
     {

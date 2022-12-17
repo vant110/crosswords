@@ -246,7 +246,7 @@ namespace Crosswords.Services
                 .SingleAsync();
         }
 
-        public async Task<CrosswordModel> SelectStartedCrosswordAsync(short crosswordId, int playerId)
+        public async Task<CrosswordModel?> SelectStartedCrosswordAsync(short crosswordId, int playerId)
         {
             return await _db.Saves
                 .Where(s => s.CrosswordId == crosswordId
@@ -279,7 +279,7 @@ namespace Crosswords.Services
                             Y = l.Y,
                             LetterName = l.LetterName
                         })))
-                .SingleAsync();
+                .SingleOrDefaultAsync();
         }
 
         public async Task InsertLetterAsync(short crosswordId, int playerId, short x, short y, char letterName)
@@ -332,7 +332,7 @@ namespace Crosswords.Services
                 CrosswordId = crosswordId,
                 PlayerId = playerId,
                 PromptCount = -1
-                
+
             };
             _db.Saves.Attach(save);
             save.PromptCount = promptCount;
