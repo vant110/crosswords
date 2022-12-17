@@ -69,15 +69,19 @@ export class AdminCrosswordsComponent {
           this.api.getCrossword(crosswordId as unknown as number),
         ),
       )
+      .subscribe((crossword) => this.selectedCrossword$.next(crossword));
+
+    this.selectedCrossword$
+      .pipe(untilDestroyed(this))
       .subscribe((crossword) => {
+        if (!crossword) return;
+
         this.updateCrossword(
           crossword.size.height,
           crossword.size.width,
           crossword.words,
         );
-        this.selectedCrossword$.next(crossword);
       });
-
     this.api
       .getDictionaries()
       .subscribe((result) => (this._dictionaries = result));
@@ -284,8 +288,14 @@ export class AdminCrosswordsComponent {
     return new Promise((resolve) => {
       const crossword = instance.form.value as Crossword;
       const selectedCrossword = this.selectedCrossword$.value;
+      const sameDictionary =
+        selectedCrossword?.dictionaryId === crossword.dictionaryId;
+      const sameHeight =
+        selectedCrossword?.size.height === crossword.size.height;
+      const sameWidth = selectedCrossword?.size.width === crossword.size.width;
+
       crossword.words =
-        selectedCrossword?.dictionaryId === crossword.dictionaryId
+        sameDictionary && sameHeight && sameWidth
           ? selectedCrossword?.words || []
           : [];
 
