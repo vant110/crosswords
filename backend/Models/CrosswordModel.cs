@@ -525,6 +525,7 @@ namespace Crosswords.Models
 
                     int type = 0;
                     string fullMask = mask.Full;
+                    int maskOffset = mask.Offset;
 
                     while (true)
                     {
@@ -540,7 +541,8 @@ namespace Crosswords.Models
                             case 0:
                                 // Обрезаем справа
                                 if (mask.Left is not null
-                                    && (mask.Left.Length + mask.Body.Length) >= 5)
+                                    && (mask.Left.Length + mask.Body.Length) >= 5
+                                    && mask.Body.Length >= 3)
                                 {
                                     mask.Full = mask.Full[..(mask.Left.Length + mask.Body.Length - 2)];
                                 }
@@ -558,7 +560,8 @@ namespace Crosswords.Models
                             case 1:
                                 // Обрезаем слева
                                 if (mask.Right is not null
-                                    && (mask.Right.Length + mask.Body.Length) >= 5)
+                                    && (mask.Right.Length + mask.Body.Length) >= 5
+                                    && mask.Body.Length >= 3)
                                 {
                                     int startIndex = mask.Full.Length - mask.Right.Length - mask.Body.Length + 2;
 
@@ -576,6 +579,7 @@ namespace Crosswords.Models
                                 {
                                     type++;
                                     mask.Full = fullMask;
+                                    mask.Offset = maskOffset;
                                     goto case 2;
                                 }
                                 break;
