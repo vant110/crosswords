@@ -107,3 +107,28 @@ nz-table.crossword-table {
     background-color: #b1daff;
   }
 }
+
+.filters {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-top: 16px;
+
+  nz-input-group {
+    width: 166px;
+  }
+
+  h2 {
+    margin: 0;
+  }
+}
+
+.crossword-words {
+  display: flex;
+  margin-top: 8px;
+
+  nz-table {
+    width: 50%;
+  }
+}

@@ -4,7 +4,7 @@ import { AuthResponse } from '../models/auth';
 import { Crossword, CrosswordList, CrosswordWord } from '../models/crossword';
 import { Dictionary } from '../models/dictionary';
 import { CrosswordTheme } from '../models/theme';
-import { DictionaryWord } from '../models/word';
+import { AvailableWord, DictionaryWord } from '../models/word';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
@@ -114,6 +114,27 @@ export class ApiService {
     return this.http.get<CrosswordWord[]>(
       `/api/dictionaries/${dictionaryId}/generate_crossword`,
       { params: { width, height } },
+    );
+  }
+
+  getAvailableWords(
+    dictionaryId: number,
+    sort: string = '',
+    search: string = '',
+    mask: string | null = null,
+    lastName: string | null = null,
+    limit: number | null = 25,
+  ) {
+    const params = {} as any;
+    if (sort) params.sort = sort;
+    if (search) params.search = search;
+    if (lastName) params.lastName = lastName;
+    if (limit) params.limit = limit;
+    if (mask) params.mask = mask;
+
+    return this.http.get<AvailableWord[]>(
+      `/api/dictionaries/${dictionaryId}/words`,
+      { params },
     );
   }
 }

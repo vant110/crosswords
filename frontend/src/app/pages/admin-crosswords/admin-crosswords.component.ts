@@ -1,9 +1,18 @@
-import { Component } from '@angular/core';
+import { AfterViewInit, Component, ViewChild } from '@angular/core';
 import { FormBuilder } from '@angular/forms';
 import { UntilDestroy, untilDestroyed } from '@ngneat/until-destroy';
 import { NzModalService } from 'ng-zorro-antd/modal';
 import { NzNotificationService } from 'ng-zorro-antd/notification';
-import { BehaviorSubject, map, Observable, switchMap } from 'rxjs';
+import { NzTableComponent } from 'ng-zorro-antd/table';
+import {
+  BehaviorSubject,
+  debounceTime,
+  filter,
+  map,
+  Observable,
+  switchMap,
+  tap,
+} from 'rxjs';
 import {
   Crossword,
   CrosswordList,
@@ -11,7 +20,9 @@ import {
 } from 'src/app/core/models/crossword';
 import { Dictionary } from 'src/app/core/models/dictionary';
 import { SelectedPoint } from 'src/app/core/models/selected-point';
+import { sortingOptions, WordSort } from 'src/app/core/models/sorting';
 import { CrosswordTheme } from 'src/app/core/models/theme';
+import { AvailableWord } from 'src/app/core/models/word';
 import { ApiService } from 'src/app/core/services/api.service';
 import { CrosswordAddComponent } from 'src/app/modals/crossword-add/crossword-add.component';
 import { ThemeAddComponent } from 'src/app/modals/theme-add/theme-add.component';
@@ -22,7 +33,10 @@ import { ThemeAddComponent } from 'src/app/modals/theme-add/theme-add.component'
   templateUrl: './admin-crosswords.component.html',
   styleUrls: ['./admin-crosswords.component.scss'],
 })
-export class AdminCrosswordsComponent {
+export class AdminCrosswordsComponent implements AfterViewInit {
+  @ViewChild('availableWordsTable', { static: false })
+  nzTableComponent?: NzTableComponent<AvailableWord>;
+
   themes$ = new BehaviorSubject<CrosswordTheme[]>([]);
   themesForm = this.formBuilder.group({
     theme: [null],
@@ -40,8 +54,18 @@ export class AdminCrosswordsComponent {
   selectedCell: SelectedPoint = { x: null, y: null };
   selectedEndCell: SelectedPoint = { x: null, y: null };
 
+  availableWords$ = new BehaviorSubject<AvailableWord[]>([]);
+
+  wordsForm = this.formBuilder.group({
+    search: [''],
+    sort: [WordSort.ASC_APLHABET],
+    mask: [''],
+  });
+  sortOptions = sortingOptions;
+
   private _dictionaries!: Dictionary[];
   private _words: CrosswordWord[] = [];
+  private _gridLoading = false;
 
   get selectedThemeId() {
     return this.themesForm.get('theme')?.value as unknown as number;
@@ -49,6 +73,10 @@ export class AdminCrosswordsComponent {
 
   get selectedCrosswordId() {
     return this.crosswordsForm.get('crossword')?.value as unknown as number;
+  }
+
+  get words() {
+    return this._words;
   }
 
   constructor(
@@ -87,6 +115,24 @@ export class AdminCrosswordsComponent {
         );
       });
 
+    this.wordsForm.valueChanges
+      .pipe(untilDestroyed(this), debounceTime(500))
+      .subscribe((value) => {
+        const sort = value.sort as WordSort;
+        const search = value.search as string;
+        const mask = value.mask as string;
+
+        const dictionaryId = this.selectedCrossword$.value
+          ?.dictionaryId as number;
+
+        this.api
+          .getAvailableWords(dictionaryId, sort, search, mask)
+          .subscribe((result) => {
+            this.nzTableComponent?.cdkVirtualScrollViewport?.scrollToIndex(0);
+            this.availableWords$.next(result);
+          });
+      });
+
     this.api
       .getDictionaries()
       .subscribe((result) => (this._dictionaries = result));
@@ -102,12 +148,47 @@ export class AdminCrosswordsComponent {
     this.updateThemes();
   }
 
+  ngAfterViewInit(): void {
+    this.nzTableComponent?.cdkVirtualScrollViewport?.scrolledIndexChange
+      .pipe(
+        untilDestroyed(this),
+        filter((index) => {
+          const loaded = this.availableWords$.value.length;
+
+          return index > loaded - 25 && loaded >= 25 && !this._gridLoading;
+        }),
+        tap(() => (this._gridLoading = true)),
+        switchMap(() => {
+          const filters = this.wordsForm.value;
+          const loaded = this.availableWords$.value.length;
+
+          const sort = filters.sort as WordSort;
+          const search = filters.search as string;
+          const mask = filters.mask as string;
+          const lastLoaded = this.availableWords$.value[loaded - 1];
+
+          return this.api.getAvailableWords(
+            this.selectedCrossword$.value?.dictionaryId as number,
+            sort,
+            search,
+            mask,
+            lastLoaded.name,
+          );
+        }),
+      )
+      .subscribe((data) => {
+        this._gridLoading = false;
+        const loadedWords = this.availableWords$.value;
+        this.availableWords$.next([...loadedWords, ...data]);
+      });
+  }
+
   private updateCrossword(
     height: number,
     width: number,
     words: CrosswordWord[],
   ) {
-    this._words = words;
+    this._words = [...words];
 
     const matrix: string[][] = [];
     for (let index = 0; index < height; index++) {
@@ -142,18 +223,61 @@ export class AdminCrosswordsComponent {
   }
 
   cellClick(y: number, x: number) {
+    if (y === this.selectedCell.y && x === this.selectedCell.x) return;
+
     if (y === this.selectedCell.y || x === this.selectedCell.x) {
       this.selectedEndCell = { y, x };
-      console.log('end cell selected', this.selectedCell, this.selectedEndCell);
+      this.updateMask();
       return;
     }
     this.selectedCell = { y, x };
     this.selectedEndCell = { y: null, x: null };
-    console.log('start cell selected', this.selectedCell);
   }
 
-  cellDoubleclick() {
-    console.log('dbl');
+  private updateMask() {
+    const [start, end] = this.getFunctionalPoints(
+      this.selectedCell,
+      this.selectedEndCell,
+    );
+    if (!start || !end) return;
+
+    const matrixMask = [];
+    const matrix = this.crosswordMatrix$.value;
+    if (
+      start.x !== null &&
+      start.y !== null &&
+      end.x !== null &&
+      end.y !== null
+    ) {
+      if (start.x === end.x) {
+        for (let index = 0; index <= end.y - start.y; index++) {
+          matrixMask.push(matrix[start.y + index][start.x]);
+        }
+      }
+
+      if (start.y === end.y) {
+        for (let index = 0; index <= end.x - start.x; index++) {
+          matrixMask.push(matrix[start.y][start.x + index]);
+        }
+      }
+    }
+
+    const adaptedMask = matrixMask.map((value) => value ?? '.').join('');
+    this.wordsForm.get('mask')?.setValue(adaptedMask);
+  }
+
+  cellDoubleclick(y: number, x: number) {
+    const matchedWords = this.getWordsForPoint(this._words, x, y);
+
+    if (matchedWords.length !== 1) return;
+
+    this._words = [
+      ...this._words.filter((word) => word.id !== matchedWords[0].id),
+    ];
+    const selectedCrossword = this.selectedCrossword$.value;
+    const width = selectedCrossword?.size.width ?? 0;
+    const height = selectedCrossword?.size.height ?? 0;
+    this.updateCrossword(height, width, this._words);
   }
 
   onAddTheme() {
@@ -395,6 +519,46 @@ export class AdminCrosswordsComponent {
     );
   }
 
+  trackByIndex(_: number, data: AvailableWord): number {
+    return data.id;
+  }
+
+  onAvailableWordClick(word: AvailableWord) {
+    if (!word) return;
+    if (this._words.some((item) => item.id === word.id)) return;
+
+    const [start, end] = this.getFunctionalPoints(
+      this.selectedCell,
+      this.selectedEndCell,
+    );
+    if (!start || !end) return;
+
+    const crosswordWord: CrosswordWord = {
+      id: word.id,
+      definition: word.definition,
+      name: word.name,
+      p1: { x: start.x as number, y: start.y as number },
+      p2: { x: end.x as number, y: end.y as number },
+    };
+
+    if (word.offset) {
+      if (crosswordWord.p1.x === crosswordWord.p2.x)
+        crosswordWord.p1.y += word.offset;
+
+      if (crosswordWord.p1.y === crosswordWord.p2.y)
+        crosswordWord.p1.x += word.offset;
+    }
+
+    this._words.push(crosswordWord);
+    this._words = [...this._words];
+
+    const selectedCrossword = this.selectedCrossword$.value;
+    const width = selectedCrossword?.size.width ?? 0;
+    const height = selectedCrossword?.size.height ?? 0;
+    this.updateCrossword(height, width, this._words);
+    this.updateMask();
+  }
+
   private updateThemes() {
     this.api.getThemes().subscribe((result) => this.themes$.next(result));
   }
@@ -406,8 +570,41 @@ export class AdminCrosswordsComponent {
   }
 
   private deselectCrossword() {
+    this.selectedCell = { x: null, y: null };
+    this.selectedEndCell = { x: null, y: null };
+
     this.crosswordsForm.get('crossword')?.setValue(null, { emitEvent: false });
     this.selectedCrossword$.next(null);
     this.crosswordMatrix$.next([[]]);
+  }
+
+  private getWordsForPoint(
+    words: CrosswordWord[],
+    x: number,
+    y: number,
+  ): CrosswordWord[] {
+    return words.filter((word) => {
+      if (word.p1.x === word.p2.x && word.p1.x === x) {
+        return y >= word.p1.y && y <= word.p2.y;
+      } else if (word.p1.y === word.p2.y && word.p1.y === y) {
+        return x >= word.p1.x && x <= word.p2.x;
+      } else return false;
+    });
+  }
+
+  private getFunctionalPoints(start: SelectedPoint, end: SelectedPoint) {
+    if (
+      start.x === null ||
+      start.y === null ||
+      end.x === null ||
+      end.y === null
+    )
+      return [null, null];
+
+    if (start.x === end.x) {
+      return start.y < end.y ? [start, end] : [end, start];
+    } else if (start.y === end.y) {
+      return start.x < end.x ? [start, end] : [end, start];
+    } else return [null, null];
   }
 }

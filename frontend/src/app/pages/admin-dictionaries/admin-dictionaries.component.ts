@@ -6,17 +6,11 @@ import { NzNotificationService } from 'ng-zorro-antd/notification';
 import { NzTableComponent } from 'ng-zorro-antd/table';
 import { BehaviorSubject, debounceTime, filter, switchMap, tap } from 'rxjs';
 import { Dictionary } from 'src/app/core/models/dictionary';
+import { sortingOptions, WordSort } from 'src/app/core/models/sorting';
 import { DictionaryWord } from 'src/app/core/models/word';
 import { ApiService } from 'src/app/core/services/api.service';
 import { DictionaryAddComponent } from 'src/app/modals/dictionary-add/dictionary-add.component';
 import { WordAddComponent } from 'src/app/modals/word-add/word-add.component';
-
-enum WordSort {
-  ASC_APLHABET = 'ascAlphabet',
-  DESC_APLHABET = 'descAlphabet',
-  DESC_LENGTH = 'descLength',
-  ASC_LENGTH = 'ascLength',
-}
 
 @UntilDestroy()
 @Component({
@@ -40,12 +34,7 @@ export class AdminDictionariesComponent implements AfterViewInit {
     sort: [WordSort.ASC_APLHABET],
   });
 
-  sortOptions = [
-    { id: WordSort.ASC_APLHABET, name: 'По алфавиту (А-Я)' },
-    { id: WordSort.DESC_APLHABET, name: 'По алфавиту (Я-А)' },
-    { id: WordSort.ASC_LENGTH, name: 'По длине (возр.)' },
-    { id: WordSort.DESC_LENGTH, name: 'По длине (убыв.)' },
-  ];
+  sortOptions = sortingOptions;
 
   selectedRow: number = -1;
 

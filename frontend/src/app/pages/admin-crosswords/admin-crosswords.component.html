@@ -115,11 +115,82 @@
             y === selectedCell.y || x === selectedCell.x
           "
           (click)="cellClick(y, x)"
-          (dblclick)="cellDoubleclick()"
+          (dblclick)="cellDoubleclick(y, x)"
         >
           {{ letter }}
         </td>
       </tr>
     </tbody>
   </nz-table>
+
+  <section class="filters" [formGroup]="wordsForm">
+    <h2>Слова</h2>
+    <nz-input-group [nzPrefix]="suffixIconSearch">
+      <input nz-input placeholder="Поиск" formControlName="search" />
+    </nz-input-group>
+    <ng-template #suffixIconSearch>
+      <span class="search" nz-icon nzType="search"></span>
+    </ng-template>
+
+    <nz-select
+      class="word-sort"
+      nzShowSearch
+      nzPlaceHolder="Выберите сортировку"
+      formControlName="sort"
+    >
+      <nz-option
+        *ngFor="let item of sortOptions"
+        [nzLabel]="item.name"
+        [nzValue]="item.id"
+      ></nz-option
+    ></nz-select>
+  </section>
+
+  <section class="crossword-words">
+    <nz-table
+      *ngIf="availableWords$ | async as availableWords"
+      #availableWordsTable
+      [nzData]="availableWords"
+      [nzFrontPagination]="false"
+      [nzScroll]="{ y: '300px' }"
+      [nzVirtualItemSize]="25"
+      [nzVirtualForTrackBy]="trackByIndex"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="160px">Слово</th>
+          <th>Определение</th>
+        </tr>
+      </thead>
+      <tbody>
+        <ng-template nz-virtual-scroll let-data let-index="index">
+          <tr (click)="onAvailableWordClick(data)">
+            <td>{{ data.name }}</td>
+            <td>{{ data.definition }}</td>
+          </tr>
+        </ng-template>
+      </tbody>
+    </nz-table>
+
+    <nz-table
+      #usedWordsTable
+      [nzData]="words"
+      [nzScroll]="{ y: '300px' }"
+      [nzShowPagination]="false"
+      [nzFrontPagination]="false"
+    >
+      <thead>
+        <tr>
+          <th nzWidth="160px">Слово</th>
+          <th>Определение</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let data of usedWordsTable.data">
+          <td>{{ data.name }}</td>
+          <td>{{ data.definition }}</td>
+        </tr>
+      </tbody>
+    </nz-table>
+  </section>
 </section>
