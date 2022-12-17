@@ -54,7 +54,7 @@ namespace Crosswords.Models
 
         public string Pattern { get; private set; }
 
-        public int Index { get; set; }
+        public int Offset { get; set; }
 
 
         [GeneratedRegex("^(\\.+)")]

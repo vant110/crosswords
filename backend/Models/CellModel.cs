@@ -13,8 +13,18 @@ namespace Crosswords.Models
         public int VIndex { get; set; }
 
         public char Input { get; set; }
+
         public bool IsSolved { get; set; }
 
+
+        public void SetInput(char input)
+        {
+            Input = input;
+
+            IsSolved = HWord is not null
+                ? HWord.Name[HIndex] == Input
+                : VWord is not null && VWord.Name[VIndex] == Input;
+        }
 
         public override string? ToString()
         {
