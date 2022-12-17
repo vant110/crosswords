@@ -1,5 +1,6 @@
 ﻿using Crosswords.Db;
 using Crosswords.Db.Models;
+using Crosswords.Models;
 using Crosswords.Models.DTOs;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,16 +8,13 @@ namespace Crosswords.Services
 {
     public class DbService
     {
-        private readonly ILogger<DbService> _logger;
         private readonly CrosswordsContext _db;
         private readonly ValidationService _validationService;
 
         public DbService(
-            ILogger<DbService> logger,
             CrosswordsContext db,
             ValidationService validationService)
         {
-            _logger = logger;
             _db = db;
             _validationService = validationService;
         }
@@ -55,7 +53,7 @@ namespace Crosswords.Services
                 DictionaryName = name
             };
             _db.Dictionaries.Add(dictionary);
-            
+
             _db.Words.AddRange(words.Select(w => new Word
             {
                 Dictionary = dictionary,
@@ -212,6 +210,174 @@ namespace Crosswords.Services
 
             crossword.Saves.Clear();
             crossword.SolvedCrosswords.Clear();
+
+            await _db.SaveChangesAsync();
+        }
+
+        #endregion
+
+        #region Игрок - Кроссворды
+
+        public async Task<CrosswordModel> SelectUnstartedCrosswordAsync(short id)
+        {
+            return await _db.Crosswords
+                .Where(c => c.CrosswordId == id)
+                .Select(c => new CrosswordModel(
+                    c.Width,
+                    c.Height,
+                    c.PromptCount,
+                    c.CrosswordWords
+                        .Select(cw => new CrosswordWordDTO
+                        {
+                            Id = cw.WordId,
+                            Name = cw.Word.WordName,
+                            Definition = cw.Word.Definition,
+                            P1 = new PointDTO<short>
+                            {
+                                X = cw.X1,
+                                Y = cw.Y1,
+                            },
+                            P2 = new PointDTO<short>
+                            {
+                                X = cw.X2,
+                                Y = cw.Y2,
+                            },
+                        })))
+                .SingleAsync();
+        }
+
+        public async Task<CrosswordModel> SelectStartedCrosswordAsync(short crosswordId, int playerId)
+        {
+            return await _db.Saves
+                .Where(s => s.CrosswordId == crosswordId
+                    && s.PlayerId == playerId)
+                .Select(s => new CrosswordModel(
+                    s.Crossword.Width,
+                    s.Crossword.Height,
+                    s.PromptCount,
+                    s.Crossword.CrosswordWords
+                        .Select(cw => new CrosswordWordDTO
+                        {
+                            Id = cw.WordId,
+                            Name = cw.Word.WordName,
+                            Definition = cw.Word.Definition,
+                            P1 = new PointDTO<short>
+                            {
+                                X = cw.X1,
+                                Y = cw.Y1,
+                            },
+                            P2 = new PointDTO<short>
+                            {
+                                X = cw.X2,
+                                Y = cw.Y2,
+                            },
+                        }),
+                    s.Letters
+                        .Select(l => new Letter
+                        {
+                            X = l.X,
+                            Y = l.Y,
+                            LetterName = l.LetterName
+                        })))
+                .SingleAsync();
+        }
+
+        public async Task InsertLetterAsync(short crosswordId, int playerId, short x, short y, char letterName)
+        {
+            var letter = new Letter
+            {
+                CrosswordId = crosswordId,
+                PlayerId = playerId,
+                X = x,
+                Y = y,
+                LetterName = letterName
+            };
+
+            _db.Letters.Add(letter);
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task UpdateLetterAsync(short crosswordId, int playerId, short x, short y, char letterName)
+        {
+            var letter = new Letter
+            {
+                CrosswordId = crosswordId,
+                PlayerId = playerId,
+                X = x,
+                Y = y
+            };
+            _db.Letters.Attach(letter);
+            letter.LetterName = letterName;
+
+            await _db.SaveChangesAsync();
+        }
+
+        public async Task DeleteLetterAsync(short crosswordId, int playerId, short x, short y)
+        {
+            var letter = new Letter
+            {
+                CrosswordId = crosswordId,
+                PlayerId = playerId,
+                X = x,
+                Y = y
+            };
+            _db.Letters.Remove(letter);
+            await _db.SaveChangesAsync();
+        }
+
+        private void ReducePromptCount(short crosswordId, int playerId, short promptCount)
+        {
+            var save = new Save
+            {
+                CrosswordId = crosswordId,
+                PlayerId = playerId,
+                PromptCount = -1
+                
+            };
+            _db.Saves.Attach(save);
+            save.PromptCount = promptCount;
+        }
+
+        public async Task InsertPromptedLetterAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
+        {
+            ReducePromptCount(crosswordId, playerId, promptCount);
+
+            await InsertLetterAsync(crosswordId, playerId, x, y, letterName);
+        }
+
+        public async Task UpdatePromptedLetterAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
+        {
+            ReducePromptCount(crosswordId, playerId, promptCount);
+
+            await UpdateLetterAsync(crosswordId, playerId, x, y, letterName);
+        }
+
+        public async Task InsertSaveAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
+        {
+            var save = new Save
+            {
+                CrosswordId = crosswordId,
+                PlayerId = playerId,
+                PromptCount = promptCount
+            };
+            _db.Saves.Add(save);
+
+            await InsertLetterAsync(crosswordId, playerId, x, y, letterName);
+        }
+
+        public async Task InsertSolvedCrosswordAsync(short crosswordId, int playerId)
+        {
+            _db.SolvedCrosswords.Add(new SolvedCrossword
+            {
+                CrosswordId = crosswordId,
+                PlayerId = playerId
+            });
+
+            _db.Saves.Remove(new Save
+            {
+                CrosswordId = crosswordId,
+                PlayerId = playerId
+            });
 
             await _db.SaveChangesAsync();
         }
