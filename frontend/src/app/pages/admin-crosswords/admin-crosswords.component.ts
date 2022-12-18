@@ -24,6 +24,7 @@ import { sortingOptions, WordSort } from 'src/app/core/models/sorting';
 import { CrosswordTheme } from 'src/app/core/models/theme';
 import { AvailableWord } from 'src/app/core/models/word';
 import { ApiService } from 'src/app/core/services/api.service';
+import { getWordsForPoint } from 'src/app/core/utils/utils';
 import { CrosswordAddComponent } from 'src/app/modals/crossword-add/crossword-add.component';
 import { ThemeAddComponent } from 'src/app/modals/theme-add/theme-add.component';
 
@@ -267,7 +268,7 @@ export class AdminCrosswordsComponent implements AfterViewInit {
   }
 
   cellDoubleclick(y: number, x: number) {
-    const matchedWords = this.getWordsForPoint(this._words, x, y);
+    const matchedWords = getWordsForPoint(this._words, x, y);
 
     if (matchedWords.length !== 1) return;
 
@@ -477,6 +478,9 @@ export class AdminCrosswordsComponent implements AfterViewInit {
     const width = selectedCrossword?.size.width ?? 0;
     const height = selectedCrossword?.size.height ?? 0;
 
+    this.selectedCell = { x: null, y: null };
+    this.selectedEndCell = { x: null, y: null };
+
     this.api
       .generateCrossword(width, height, selectedCrossword?.dictionaryId ?? 0)
       .subscribe(
@@ -567,20 +571,6 @@ export class AdminCrosswordsComponent implements AfterViewInit {
     this.crosswordsForm.get('crossword')?.setValue(null, { emitEvent: false });
     this.selectedCrossword$.next(null);
     this.crosswordMatrix$.next([[]]);
-  }
-
-  private getWordsForPoint(
-    words: CrosswordWord[],
-    x: number,
-    y: number,
-  ): CrosswordWord[] {
-    return words.filter((word) => {
-      if (word.p1.x === word.p2.x && word.p1.x === x) {
-        return y >= word.p1.y && y <= word.p2.y;
-      } else if (word.p1.y === word.p2.y && word.p1.y === y) {
-        return x >= word.p1.x && x <= word.p2.x;
-      } else return false;
-    });
   }
 
   private getFunctionalPoints(start: SelectedPoint, end: SelectedPoint) {

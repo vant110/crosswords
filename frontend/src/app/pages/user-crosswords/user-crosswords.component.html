@@ -1,1 +1,114 @@
-<p>user-crosswords works!</p>
+<section class="themes" [formGroup]="filterForm">
+  <nz-select nzShowSearch nzPlaceHolder="Выберите тему" formControlName="theme">
+    <nz-option
+      *ngFor="let item of themes$ | async"
+      [nzLabel]="item.name"
+      [nzValue]="item.id"
+    ></nz-option
+  ></nz-select>
+  <nz-select
+    *ngIf="selectedThemeId"
+    nzShowSearch
+    nzPlaceHolder="Выберите тип кроссворда"
+    formControlName="crosswordType"
+  >
+    <nz-option
+      *ngFor="let item of crosswordTypeOptions"
+      [nzLabel]="item.name"
+      [nzValue]="item.id"
+    ></nz-option
+  ></nz-select>
+</section>
+
+<section
+  *ngIf="filtersPresent"
+  class="crossword-header"
+  [formGroup]="crosswordsForm"
+>
+  <h2>Кроссворды</h2>
+  <nz-select
+    nzShowSearch
+    nzPlaceHolder="Выберите кроссворд"
+    formControlName="crossword"
+  >
+    <nz-option
+      *ngFor="let item of crosswords$ | async"
+      [nzLabel]="item.name"
+      [nzValue]="item.id"
+    ></nz-option
+  ></nz-select>
+
+  <button
+    *ngIf="selectedCrossword$ | async as selectedCrossword"
+    nz-button
+    nzType="primary"
+    [disabled]="!isCellSelected || selectedCrossword.promptCount <= 0"
+    (click)="onTakePrompt()"
+  >
+    Взять подсказку ({{ selectedCrossword.promptCount }})
+  </button>
+</section>
+
+<section class="crossword-content">
+  <nz-table
+    #crosswordTable
+    *ngIf="crosswordMatrix$ | async as crosswordMatrix"
+    class="crossword-table"
+    nzBordered
+    nzTableLayout="fixed"
+    nzSize="small"
+    [style.width.px]="crosswordMatrix | crosswordWidth"
+    [nzData]="crosswordMatrix"
+    [nzShowPagination]="false"
+    [nzFrontPagination]="false"
+  >
+    <tbody>
+      <tr *ngFor="let data of crosswordTable.data; let y = index">
+        <td
+          *ngFor="let letter of data; let x = index"
+          nzAlign="center"
+          [class.potentian-letter]="letter !== undefined"
+          [class.selected]="y === selectedCell?.y && x === selectedCell?.x"
+          (click)="onLetterClick(y, x, letter)"
+        >
+          <input
+            *ngIf="letter !== undefined"
+            type="text"
+            maxlength="1"
+            nz-input
+            nzBorderless
+            nzSize="small"
+            [disabled]="solvedMatrix[y][x]"
+            [ngModel]="letter"
+            (ngModelChange)="onLetterChange($event, y, x)"
+          />
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+
+  <nz-table
+    #definitionsTable
+    *ngIf="selectedCrossword$ | async as selectedCrossword"
+    class="definition-table"
+    [nzData]="selectedCrossword.words"
+    [nzScroll]="{ y: '300px' }"
+    [nzShowPagination]="false"
+    [nzFrontPagination]="false"
+  >
+    <thead>
+      <tr>
+        <th>Определение</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr *ngFor="let data of definitionsTable.data">
+        <td
+          [class.selected-definition]="selectedWordsIds.indexOf(data.id) !== -1"
+        >
+          {{ data.definition }}
+        </td>
+      </tr>
+    </tbody>
+  </nz-table>
+</section>

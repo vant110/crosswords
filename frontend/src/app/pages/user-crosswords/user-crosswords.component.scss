@@ -1,0 +1,74 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.themes {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+nz-select {
+  width: 220px;
+}
+
+.crossword-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-top: 16px;
+
+  h2 {
+    margin: 0;
+  }
+
+  nz-input-group {
+    width: 166px;
+  }
+
+  button {
+    margin-left: auto;
+  }
+}
+
+.crossword-content {
+  overflow: auto;
+  margin-top: 16px;
+
+  nz-table.crossword-table {
+    margin-bottom: 16px;
+
+    td {
+      padding: 4px;
+      height: 31px;
+      border: none;
+      border-collapse: collapse;
+
+      &.potentian-letter {
+        border: 1px solid rgb(104, 104, 104);
+        background-color: #f0f0f0;
+      }
+
+      &.potentian-letter.selected {
+        background-color: #4aa8ff;
+      }
+
+      input {
+        padding: 0;
+        text-align: center;
+        text-transform: uppercase;
+      }
+    }
+  }
+
+  nz-table.definition-table {
+    td {
+      &.selected-definition {
+        background-color: #4aa8ff;
+      }
+    }
+  }
+}

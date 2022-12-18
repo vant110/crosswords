@@ -15,6 +15,13 @@ export interface CrosswordWord {
     x: number;
     y: number;
   };
+  isSolved?: boolean;
+}
+
+export interface CrosswordGrid {
+  x: number;
+  y: number;
+  l: string;
 }
 
 export interface Crossword {
@@ -27,4 +34,22 @@ export interface Crossword {
   };
   promptCount: number;
   words: Array<CrosswordWord>;
+}
+
+export interface UserCrossword {
+  size: {
+    width: number;
+    height: number;
+  };
+  promptCount: number;
+  words: Array<CrosswordWord>;
+  grid: Array<CrosswordGrid>;
+}
+
+export interface ChangeLetterResponse {
+  solvedWords: Array<{ id: number }>;
+}
+
+export interface CrosswordPrompt extends Partial<ChangeLetterResponse> {
+  letter: string;
 }

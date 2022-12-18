@@ -1,7 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { AuthResponse } from '../models/auth';
-import { Crossword, CrosswordList, CrosswordWord } from '../models/crossword';
+import {
+  ChangeLetterResponse,
+  Crossword,
+  CrosswordList,
+  CrosswordPrompt,
+  CrosswordWord,
+  UserCrossword,
+} from '../models/crossword';
 import { Dictionary } from '../models/dictionary';
 import { CrosswordTheme } from '../models/theme';
 import { AvailableWord, DictionaryWord } from '../models/word';
@@ -135,6 +142,40 @@ export class ApiService {
     return this.http.get<AvailableWord[]>(
       `/api/dictionaries/${dictionaryId}/words`,
       { params },
+    );
+  }
+
+  getUnstartedCrosswordList(themeId: number) {
+    return this.http.get<CrosswordList[]>(
+      `/api/themes/${themeId}/crosswords/unstarted`,
+    );
+  }
+
+  getStartedCrosswordList(themeId: number) {
+    return this.http.get<CrosswordList[]>(
+      `/api/themes/${themeId}/crosswords/started`,
+    );
+  }
+
+  getUnstartedCrossword(id: number) {
+    return this.http.get<UserCrossword>(`/api/crosswords/${id}/unstarted`);
+  }
+
+  getStartedCrossword(id: number) {
+    return this.http.get<UserCrossword>(`/api/crosswords/${id}/started`);
+  }
+
+  changeLetter(crosswordId: number, x: number, y: number, letter: string) {
+    return this.http.get<ChangeLetterResponse>(
+      `/api/crosswords/${crosswordId}/change_letter`,
+      { params: { x, y, letter } },
+    );
+  }
+
+  takePrompt(crosswordId: number, x: number, y: number) {
+    return this.http.get<CrosswordPrompt>(
+      `/api/crosswords/${crosswordId}/take_prompt`,
+      { params: { x, y } },
     );
   }
 }
