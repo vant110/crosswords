@@ -47,11 +47,9 @@ namespace Crosswords.Models
                 Pattern = patternBuilder.ToString();
             }
         }
-
         public string? Left { get; private set; }
         public string? Body { get; private set; }
         public string? Right { get; private set; }
-
         public string Pattern { get; private set; }
 
         public int Offset { get; set; }

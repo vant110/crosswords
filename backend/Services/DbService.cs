@@ -218,10 +218,16 @@ namespace Crosswords.Services
 
         #region Игрок - Кроссворды
 
-        public async Task<CrosswordModel> SelectUnstartedCrosswordAsync(short id)
+        public async Task<CrosswordModel?> SelectUnstartedCrosswordAsync(short crosswordId, int playerId)
         {
             return await _db.Crosswords
-                .Where(c => c.CrosswordId == id)
+                .Where(c => c.CrosswordId == crosswordId
+                    && !c.Saves
+                        .Where(s => s.PlayerId == playerId)
+                        .Any()
+                    && !c.SolvedCrosswords
+                        .Where(sc => sc.PlayerId == playerId)
+                        .Any())
                 .Select(c => new CrosswordModel(
                     c.Width,
                     c.Height,
@@ -243,7 +249,7 @@ namespace Crosswords.Services
                                 Y = cw.Y2,
                             },
                         })))
-                .SingleAsync();
+                .SingleOrDefaultAsync();
         }
 
         public async Task<CrosswordModel?> SelectStartedCrosswordAsync(short crosswordId, int playerId)
@@ -278,9 +284,13 @@ namespace Crosswords.Services
                             X = l.X,
                             Y = l.Y,
                             LetterName = l.LetterName
-                        })))
+                        }))
+                {
+                    IsStarted = true
+                })
                 .SingleOrDefaultAsync();
         }
+
 
         public async Task InsertLetterAsync(short crosswordId, int playerId, short x, short y, char letterName)
         {
@@ -325,7 +335,8 @@ namespace Crosswords.Services
             await _db.SaveChangesAsync();
         }
 
-        private void ReducePromptCount(short crosswordId, int playerId, short promptCount)
+
+        private void UpdatePromptCount(short crosswordId, int playerId, short promptCount)
         {
             var save = new Save
             {
@@ -340,19 +351,20 @@ namespace Crosswords.Services
 
         public async Task InsertPromptedLetterAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
         {
-            ReducePromptCount(crosswordId, playerId, promptCount);
+            UpdatePromptCount(crosswordId, playerId, promptCount);
 
             await InsertLetterAsync(crosswordId, playerId, x, y, letterName);
         }
 
         public async Task UpdatePromptedLetterAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
         {
-            ReducePromptCount(crosswordId, playerId, promptCount);
+            UpdatePromptCount(crosswordId, playerId, promptCount);
 
             await UpdateLetterAsync(crosswordId, playerId, x, y, letterName);
         }
 
-        public async Task InsertSaveAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
+
+        public async Task AddCrosswordToSavedAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
         {
             var save = new Save
             {
@@ -365,7 +377,7 @@ namespace Crosswords.Services
             await InsertLetterAsync(crosswordId, playerId, x, y, letterName);
         }
 
-        public async Task InsertSolvedCrosswordAsync(short crosswordId, int playerId)
+        public async Task MoveCrosswordToSolvedAsync(short crosswordId, int playerId)
         {
             _db.SolvedCrosswords.Add(new SolvedCrossword
             {

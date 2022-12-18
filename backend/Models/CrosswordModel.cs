@@ -12,12 +12,9 @@ namespace Crosswords.Models
         private IEnumerable<CrosswordWordDTO>? crosswordWordDTOs;
 
 
-        public int Width { get; set; }
-        public int Height { get; set; }
-        public CellModel[][] Cells { get; set; }
-
-        public int PromptCount { get; set; }
-
+        public int Width { get; }
+        public int Height { get; }
+        public CellModel[][] Cells { get; }
         public IEnumerable<CrosswordWordDTO> CrosswordWordDTOs
         {
             get
@@ -86,17 +83,13 @@ namespace Crosswords.Models
                 return dictionary
                     .Select(cwm => cwm.Value);
             }
-            set => crosswordWordDTOs = value;
+            private set => crosswordWordDTOs = value;
         }
+        public IEnumerable<Letter>? Letters { get; }
 
-        public IEnumerable<Letter>? Letters { get; set; }
-
+        public int PromptCount { get; set; }
         public bool IsStarted { get; set; }
 
-
-        public CrosswordModel()
-        {
-        }
 
         public CrosswordModel(int width, int height)
         {
@@ -114,7 +107,8 @@ namespace Crosswords.Models
             }
         }
 
-        public CrosswordModel(int width, int height, int promptCount, IEnumerable<CrosswordWordDTO> crosswordWordDTOs) : this(width, height)
+        public CrosswordModel(int width, int height, int promptCount, IEnumerable<CrosswordWordDTO> crosswordWordDTOs)
+            : this(width, height)
         {
             PromptCount = promptCount;
             CrosswordWordDTOs = crosswordWordDTOs;
@@ -143,14 +137,15 @@ namespace Crosswords.Models
         }
 
         public CrosswordModel(int width, int height, int promptCount, IEnumerable<CrosswordWordDTO> crosswordWordDTOs,
-            IEnumerable<Letter> letters) : this(width, height, promptCount, crosswordWordDTOs)
+            IEnumerable<Letter> letters)
+            : this(width, height, promptCount, crosswordWordDTOs)
         {
             Letters = letters;
             IsStarted = true;
 
             foreach (var letter in Letters)
             {
-                Cells[letter.X][letter.Y].SetInput(letter.LetterName);
+                Cells[letter.X][letter.Y].Input = letter.LetterName;
             }
 
             for (int x = 0; x < Width; x++)
@@ -162,41 +157,13 @@ namespace Crosswords.Models
                     if (cell.HWord is not null
                         && cell.HIndex == 0)
                     {
-                        var word = cell.HWord;
-
-                        bool IsSolvedWord = true;
-                        for (int i = x; i < x + word.Name.Length; i++)
-                        {
-                            if (!Cells[i][y].IsSolved)
-                            {
-                                IsSolvedWord = false;
-                                break;
-                            }
-                        }
-                        if (IsSolvedWord)
-                        {
-                            word.IsSolved = true;
-                        }
+                        CheckHWord(x, y);
                     }
 
                     if (cell.VWord is not null
                         && cell.VIndex == 0)
                     {
-                        var word = cell.VWord;
-
-                        bool IsSolvedWord = true;
-                        for (int i = y; i < y + word.Name.Length; i++)
-                        {
-                            if (!Cells[x][i].IsSolved)
-                            {
-                                IsSolvedWord = false;
-                                break;
-                            }
-                        }
-                        if (IsSolvedWord)
-                        {
-                            word.IsSolved = true;
-                        }
+                        CheckVWord(x, y);
                     }
                 }
             }
@@ -711,7 +678,6 @@ namespace Crosswords.Models
                 throw new ArgumentException($"Не найдено ни одного достаточно короткого слова для размещения по {orientation}");
             }
 
-
             int n = Width > Height
                 ? Width / 2 + Width % 2
                 : Height / 2 + Height % 2;
@@ -755,10 +721,13 @@ namespace Crosswords.Models
             } while (nAddedWords != 0);
         }
 
-        public bool IsSolvedHWord(int x, int y)
+        public bool CheckHWord(int x, int y)
         {
             var cell = Cells[x][y];
             var word = cell.HWord;
+
+            if (word is null)
+                throw new Exception("Слово не найдено");
 
             int firstIdx = x - cell.HIndex;
             int lastIdx = firstIdx + word.Name.Length - 1;
@@ -779,10 +748,13 @@ namespace Crosswords.Models
             return IsSolvedWord;
         }
 
-        public bool IsSolvedVWord(int x, int y)
+        public bool CheckVWord(int x, int y)
         {
             var cell = Cells[x][y];
             var word = cell.VWord;
+
+            if (word is null)
+                throw new Exception("Слово не найдено");
 
             int firstIdx = y - cell.VIndex;
             int lastIdx = firstIdx + word.Name.Length - 1;
@@ -803,7 +775,7 @@ namespace Crosswords.Models
             return IsSolvedWord;
         }
 
-        public bool IsSolved()
+        public bool Check()
         {
             for (int x = 0; x < Width; x++)
             {
