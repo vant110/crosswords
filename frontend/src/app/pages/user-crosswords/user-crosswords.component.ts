@@ -75,6 +75,14 @@ export class UserCrosswordsComponent implements OnInit {
     );
   }
 
+  get isSelectedCellSolved() {
+    if (!this.selectedCell) return false;
+
+    const x = this.selectedCell?.x;
+    const y = this.selectedCell?.y;
+    return this.solvedMatrix[y][x];
+  }
+
   constructor(
     private api: ApiService,
     private modal: NzModalService,
@@ -161,7 +169,7 @@ export class UserCrosswordsComponent implements OnInit {
 
     if (grid.length) {
       for (const item of grid) {
-        matrix[item.y][item.x] = item.l;
+        matrix[item.y][item.x] = item.l === ' ' ? '' : item.l;
       }
     }
 
@@ -179,7 +187,14 @@ export class UserCrosswordsComponent implements OnInit {
           this.selectedCrossword$.value.promptCount--;
         }
 
-        this.crosswordMatrix$.value[y][x] = result.letter;
+        const matrix: string[][] = [];
+        const oldMatrix = this.crosswordMatrix$.value;
+        for (let index = 0; index < oldMatrix.length; index++) {
+          matrix[index] = [...oldMatrix[index]];
+        }
+        matrix[y][x] = result.letter;
+        this.crosswordMatrix$.next(matrix);
+        // this.crosswordMatrix$.value[y][x] = result.letter;
 
         if (result.solvedWords?.length) {
           this.applySolvedWords(result.solvedWords);
@@ -206,8 +221,10 @@ export class UserCrosswordsComponent implements OnInit {
   }
 
   onLetterChange(letter: string, y: number, x: number) {
+    // this.crosswordMatrix$.value[y][x] = letter;
+
     const crosswordId = this.selectedCrosswordId;
-    this.api.changeLetter(crosswordId, x, y, letter).subscribe(
+    this.api.changeLetter(crosswordId, x, y, letter || ' ').subscribe(
       (result) => {
         if (!result.solvedWords?.length) return;
 

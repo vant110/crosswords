@@ -42,7 +42,11 @@
     *ngIf="selectedCrossword$ | async as selectedCrossword"
     nz-button
     nzType="primary"
-    [disabled]="!isCellSelected || selectedCrossword.promptCount <= 0"
+    [disabled]="
+      isSelectedCellSolved ||
+      !isCellSelected ||
+      selectedCrossword.promptCount <= 0
+    "
     (click)="onTakePrompt()"
   >
     Взять подсказку ({{ selectedCrossword.promptCount }})
