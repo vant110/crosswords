@@ -267,6 +267,16 @@ app.MapDelete("api/dictionaries/{id}", [Authorize(Roles = "admin")] async (
     {
         return Results.BadRequest(new { message = "Словарь не найден" });
     }
+    catch (DbUpdateException ex)
+    {
+        string message = ex.InnerException is PostgresException postgresException
+            && postgresException.TableName is not null
+            && postgresException.TableName.Contains("crosswords")
+                ? "Нельзя удалить словарь, пока он используется в кроссворде"
+                : ex.Message;
+
+        return Results.BadRequest(new { message });
+    }
     catch (Exception ex)
     {
         return Results.Problem(ex.Message);
@@ -442,6 +452,16 @@ app.MapDelete("api/words/{id}", [Authorize(Roles = "admin")] async (
     {
         return Results.BadRequest(new { message = "Слово не найдено" });
     }
+    catch (DbUpdateException ex)
+    {
+        string message = ex.InnerException is PostgresException postgresException
+            && postgresException.TableName is not null
+            && postgresException.TableName.Contains("crossword_words")
+                ? "Нельзя удалить слово, пока оно используется в кроссворде"
+                : ex.Message;
+
+        return Results.BadRequest(new { message });
+    }
     catch (Exception ex)
     {
         return Results.Problem(ex.Message);
@@ -527,6 +547,16 @@ app.MapDelete("api/themes/{id}", [Authorize(Roles = "admin")] async (
     catch (DbUpdateConcurrencyException)
     {
         return Results.BadRequest(new { message = "Тема не найдена" });
+    }
+    catch (DbUpdateException ex)
+    {
+        string message = ex.InnerException is PostgresException postgresException
+            && postgresException.TableName is not null
+            && postgresException.TableName.Contains("crosswords")
+                ? "Нельзя удалить тему, пока она используется в кроссворде"
+                : ex.Message;
+
+        return Results.BadRequest(new { message });
     }
     catch (Exception ex)
     {

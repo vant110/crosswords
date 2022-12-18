@@ -284,10 +284,7 @@ namespace Crosswords.Services
                             X = l.X,
                             Y = l.Y,
                             LetterName = l.LetterName
-                        }))
-                {
-                    IsStarted = true
-                })
+                        })))
                 .SingleOrDefaultAsync();
         }
 
