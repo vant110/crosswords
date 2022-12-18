@@ -406,11 +406,7 @@ export class AdminCrosswordsComponent implements AfterViewInit {
     if (!this.selectedCrossword$.value || !this.selectedCrosswordId) return;
 
     const crossword = this.selectedCrossword$.value;
-    crossword.themeId = this.selectedThemeId;
-    crossword.name =
-      this.crosswords$.value.find(
-        (item) => item.id === this.selectedCrosswordId,
-      )?.name || '';
+    crossword.words = this._words;
 
     this.modal.create({
       nzContent: CrosswordAddComponent,
@@ -500,11 +496,6 @@ export class AdminCrosswordsComponent implements AfterViewInit {
       ...this.selectedCrossword$.value,
       words: this._words,
     };
-    crossword.themeId = this.selectedThemeId;
-    crossword.name =
-      this.crosswords$.value.find(
-        (item) => item.id === this.selectedCrosswordId,
-      )?.name || '';
 
     this.api.putCrossword(crossword, this.selectedCrosswordId).subscribe(
       () => {
