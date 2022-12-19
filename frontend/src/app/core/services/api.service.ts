@@ -166,9 +166,14 @@ export class ApiService {
   }
 
   changeLetter(crosswordId: number, x: number, y: number, letter: string) {
+    const params = {} as any;
+    params.x = x;
+    params.y = y;
+    if (letter) params.letter = letter;
+
     return this.http.get<ChangeLetterResponse>(
       `/api/crosswords/${crosswordId}/change_letter`,
-      { params: { x, y, letter } },
+      { params },
     );
   }
 

@@ -49,6 +49,8 @@ export class UserCrosswordsComponent implements OnInit {
   selectedCell: { x: number; y: number } | null = null;
   selectedWordsIds: number[] = [];
 
+  private _crosswordMatrix: string[][] = [];
+
   get selectedThemeId() {
     return this.filterForm.get('theme')?.value as number;
   }
@@ -174,6 +176,7 @@ export class UserCrosswordsComponent implements OnInit {
     }
 
     this.solvedMatrix = solvedMatrix;
+    this._crosswordMatrix = this.deepCopyMatrix(matrix);
     this.crosswordMatrix$.next(matrix);
   }
 
@@ -187,14 +190,9 @@ export class UserCrosswordsComponent implements OnInit {
           this.selectedCrossword$.value.promptCount--;
         }
 
-        const matrix: string[][] = [];
-        const oldMatrix = this.crosswordMatrix$.value;
-        for (let index = 0; index < oldMatrix.length; index++) {
-          matrix[index] = [...oldMatrix[index]];
-        }
-        matrix[y][x] = result.letter;
+        this._crosswordMatrix[y][x] = result.letter;
+        const matrix = this.deepCopyMatrix(this._crosswordMatrix);
         this.crosswordMatrix$.next(matrix);
-        // this.crosswordMatrix$.value[y][x] = result.letter;
 
         if (result.solvedWords?.length) {
           this.applySolvedWords(result.solvedWords);
@@ -221,10 +219,10 @@ export class UserCrosswordsComponent implements OnInit {
   }
 
   onLetterChange(letter: string, y: number, x: number) {
-    // this.crosswordMatrix$.value[y][x] = letter;
+    this._crosswordMatrix[y][x] = letter;
 
     const crosswordId = this.selectedCrosswordId;
-    this.api.changeLetter(crosswordId, x, y, letter || ' ').subscribe(
+    this.api.changeLetter(crosswordId, x, y, letter).subscribe(
       (result) => {
         if (!result.solvedWords?.length) return;
 
@@ -276,5 +274,13 @@ export class UserCrosswordsComponent implements OnInit {
     this.crosswordsForm.get('crossword')?.setValue(null, { emitEvent: false });
     this.selectedCrossword$.next(null);
     this.crosswordMatrix$.next([[]]);
+  }
+
+  private deepCopyMatrix(matrix: string[][]) {
+    const copy: string[][] = [];
+    for (let index = 0; index < matrix.length; index++) {
+      copy[index] = [...matrix[index]];
+    }
+    return copy;
   }
 }
