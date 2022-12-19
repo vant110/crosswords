@@ -15,5 +15,7 @@ public partial class Letter
 
     public char LetterName { get; set; }
 
+    public bool PromptStatus { get; set; }
+
     public virtual Save Save { get; set; } = null!;
 }

@@ -1,5 +1,4 @@
-﻿using Crosswords.Db.Models;
-using Crosswords.Models.DTOs;
+﻿using Crosswords.Models.DTOs;
 using Crosswords.Models.Enums;
 using Crosswords.Services;
 using System.Text;
@@ -85,7 +84,7 @@ namespace Crosswords.Models
             }
             private set => crosswordWordDTOs = value;
         }
-        public IEnumerable<Letter>? Letters { get; }
+        public IEnumerable<LetterDTO>? Letters { get; }
 
         public int PromptCount { get; set; }
         public bool IsStarted { get; set; }
@@ -137,35 +136,25 @@ namespace Crosswords.Models
         }
 
         public CrosswordModel(int width, int height, int promptCount, IEnumerable<CrosswordWordDTO> crosswordWordDTOs,
-            IEnumerable<Letter> letters)
+            IEnumerable<LetterDTO> letters)
             : this(width, height, promptCount, crosswordWordDTOs)
         {
             Letters = letters;
             IsStarted = true;
 
-            foreach (var letter in Letters)
+            foreach (var l in Letters)
             {
-                Cells[letter.X][letter.Y].Input = letter.LetterName;
+                Cells[l.X][l.Y].Input = l.L;
             }
 
-            for (int x = 0; x < Width; x++)
+            foreach (var cwDTO in CrosswordWordDTOs)
             {
-                for (int y = 0; y < Height; y++)
-                {
-                    var cell = Cells[x][y];
+                var x = cwDTO.P1.X;
+                var y = cwDTO.P1.Y;
 
-                    if (cell.HWord is not null
-                        && cell.HIndex == 0)
-                    {
-                        CheckHWord(x, y);
-                    }
-
-                    if (cell.VWord is not null
-                        && cell.VIndex == 0)
-                    {
-                        CheckVWord(x, y);
-                    }
-                }
+                cwDTO.IsSolved = cwDTO.P1.X < cwDTO.P2.X
+                    ? CheckHWord(x, y)
+                    : CheckVWord(x, y);
             }
         }
 

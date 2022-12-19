@@ -57,7 +57,7 @@ public partial class CrosswordsContext : DbContext
                 .HasForeignKey(d => d.ThemeId)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("crosswords_theme_id_fkey");
-        });
+                    });
 
         modelBuilder.Entity<CrosswordWord>(entity =>
         {
@@ -105,8 +105,9 @@ public partial class CrosswordsContext : DbContext
             entity.Property(e => e.X).HasColumnName("x");
             entity.Property(e => e.Y).HasColumnName("y");
             entity.Property(e => e.LetterName)
-                .HasColumnType("char")
+                .HasMaxLength(1)
                 .HasColumnName("letter_name");
+            entity.Property(e => e.PromptStatus).HasColumnName("prompt_status");
 
             entity.HasOne(d => d.Save).WithMany(p => p.Letters)
                 .HasForeignKey(d => new { d.CrosswordId, d.PlayerId })

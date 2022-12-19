@@ -852,13 +852,6 @@ app.MapGet("api/crosswords/{id}/unstarted", [Authorize(Roles = "player")] async 
         crossword.PromptCount,
         words = crossword.CrosswordWordDTOs
             .OrderBy(cwDTO => cwDTO.Definition)
-            .Select(cwDTO => new
-            {
-                cwDTO.Id,
-                cwDTO.Definition,
-                cwDTO.P1,
-                cwDTO.P2
-            })
     });
 });
 
@@ -882,24 +875,8 @@ app.MapGet("api/crosswords/{id}/started", [Authorize(Roles = "player")] async (
         },
         crossword.PromptCount,
         words = crossword.CrosswordWordDTOs
-            .OrderBy(cwDTO => cwDTO.Definition)
-            .Select(cwDTO => new
-            {
-                cwDTO.Id,
-                cwDTO.Definition,
-                cwDTO.P1,
-                cwDTO.P2,
-                isSolved = cwDTO.P1.X < cwDTO.P2.X
-                    ? crossword.Cells[cwDTO.P1.X][cwDTO.P1.Y].HWord.IsSolved
-                    : crossword.Cells[cwDTO.P1.X][cwDTO.P1.Y].VWord.IsSolved
-            }),
+            .OrderBy(cwDTO => cwDTO.Definition),
         grid = crossword.Letters
-            .Select(l => new
-            {
-                l.X,
-                l.Y,
-                l = l.LetterName
-            })
     });
 });
 
@@ -974,7 +951,7 @@ app.MapGet("api/crosswords/{id}/take_prompt", [Authorize(Roles = "player")] asyn
     }
     else if (!crossword.IsStarted)
     {
-        await dbService.AddCrosswordToSavedAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
+        await dbService.AddCrosswordToSavedAsync(id, playerId, (short)crossword.PromptCount, x, y, letter, true);
         crossword.IsStarted = true;
     }
     else if (hasPreviousInput)
@@ -1001,7 +978,7 @@ app.MapGet("api/crosswords/{id}/change_letter", [Authorize(Roles = "player")] as
     short id,
     short x,
     short y,
-    char letter,
+    char? letter,
     HttpContext context,
     DbService dbService) =>
 {
@@ -1035,9 +1012,8 @@ app.MapGet("api/crosswords/{id}/change_letter", [Authorize(Roles = "player")] as
     }
     bool hasPreviousInput = cell.Input != default;
 
-    letter = char.ToUpper(letter);
-    cell.Input = letter != ' '
-        ? letter
+    cell.Input = letter is not null
+        ? char.ToUpper((char)letter)
         : default;
 
     var solvedWords = new List<int>();
@@ -1065,23 +1041,23 @@ app.MapGet("api/crosswords/{id}/change_letter", [Authorize(Roles = "player")] as
     }
     else if (!crossword.IsStarted)
     {
-        await dbService.AddCrosswordToSavedAsync(id, playerId, (short)crossword.PromptCount, x, y, letter);
+        await dbService.AddCrosswordToSavedAsync(id, playerId, (short)crossword.PromptCount, x, y, cell.Input);
         crossword.IsStarted = true;
     }
     else if (hasPreviousInput)
     {
-        if (letter == default)
+        if (cell.Input == default)
         {
             await dbService.DeleteLetterAsync(id, playerId, x, y);
         }
         else
         {
-            await dbService.UpdateLetterAsync(id, playerId, x, y, letter);
+            await dbService.UpdateLetterAsync(id, playerId, x, y, cell.Input);
         }
     }
     else
     {
-        await dbService.InsertLetterAsync(id, playerId, x, y, letter);
+        await dbService.InsertLetterAsync(id, playerId, x, y, cell.Input);
     }
 
     return Results.Json(new

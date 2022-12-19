@@ -1,4 +1,5 @@
 ﻿using Crosswords.Db.Models;
+using System.Text.Json.Serialization;
 
 namespace Crosswords.Models.DTOs
 {
@@ -6,6 +7,7 @@ namespace Crosswords.Models.DTOs
     {
         public int Id { get; set; }
 
+        [JsonIgnore(Condition = JsonIgnoreCondition.Always)]
         public string Name { get; set; }
 
         public string Definition { get; set; }
@@ -13,6 +15,9 @@ namespace Crosswords.Models.DTOs
         public PointDTO<short> P1 { get; set; }
 
         public PointDTO<short> P2 { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+        public bool IsSolved { get; set; }
 
 
         public CrosswordWord ToCrosswordWord(Crossword crossword)

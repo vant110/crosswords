@@ -279,17 +279,18 @@ namespace Crosswords.Services
                             },
                         }),
                     s.Letters
-                        .Select(l => new Letter
+                        .Select(l => new LetterDTO
                         {
                             X = l.X,
                             Y = l.Y,
-                            LetterName = l.LetterName
+                            L = l.LetterName,
+                            IsPrompted = l.PromptStatus
                         })))
                 .SingleOrDefaultAsync();
         }
 
 
-        public async Task InsertLetterAsync(short crosswordId, int playerId, short x, short y, char letterName)
+        public async Task InsertLetterAsync(short crosswordId, int playerId, short x, short y, char letterName, bool promptStatus = false)
         {
             var letter = new Letter
             {
@@ -297,14 +298,14 @@ namespace Crosswords.Services
                 PlayerId = playerId,
                 X = x,
                 Y = y,
-                LetterName = letterName
+                LetterName = letterName,
+                PromptStatus = promptStatus
             };
-
             _db.Letters.Add(letter);
             await _db.SaveChangesAsync();
         }
 
-        public async Task UpdateLetterAsync(short crosswordId, int playerId, short x, short y, char letterName)
+        public async Task UpdateLetterAsync(short crosswordId, int playerId, short x, short y, char letterName, bool promptStatus = false)
         {
             var letter = new Letter
             {
@@ -315,6 +316,7 @@ namespace Crosswords.Services
             };
             _db.Letters.Attach(letter);
             letter.LetterName = letterName;
+            letter.PromptStatus = promptStatus;
 
             await _db.SaveChangesAsync();
         }
@@ -340,7 +342,6 @@ namespace Crosswords.Services
                 CrosswordId = crosswordId,
                 PlayerId = playerId,
                 PromptCount = -1
-
             };
             _db.Saves.Attach(save);
             save.PromptCount = promptCount;
@@ -350,18 +351,18 @@ namespace Crosswords.Services
         {
             UpdatePromptCount(crosswordId, playerId, promptCount);
 
-            await InsertLetterAsync(crosswordId, playerId, x, y, letterName);
+            await InsertLetterAsync(crosswordId, playerId, x, y, letterName, true);
         }
 
         public async Task UpdatePromptedLetterAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
         {
             UpdatePromptCount(crosswordId, playerId, promptCount);
 
-            await UpdateLetterAsync(crosswordId, playerId, x, y, letterName);
+            await UpdateLetterAsync(crosswordId, playerId, x, y, letterName, true);
         }
 
 
-        public async Task AddCrosswordToSavedAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName)
+        public async Task AddCrosswordToSavedAsync(short crosswordId, int playerId, short promptCount, short x, short y, char letterName, bool promptStatus = false)
         {
             var save = new Save
             {
@@ -371,7 +372,7 @@ namespace Crosswords.Services
             };
             _db.Saves.Add(save);
 
-            await InsertLetterAsync(crosswordId, playerId, x, y, letterName);
+            await InsertLetterAsync(crosswordId, playerId, x, y, letterName, promptStatus);
         }
 
         public async Task MoveCrosswordToSolvedAsync(short crosswordId, int playerId)
