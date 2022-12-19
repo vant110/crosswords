@@ -753,12 +753,9 @@ app.MapGet("api/dictionaries/{dictionaryId}/generate_crossword", [Authorize(Role
 
         crossword.Generate(words);
 
-        var crosswordWordDTOs = crossword.CrosswordWordDTOs
-            .OrderBy(cwDTO => cwDTO.Name);
-
         if (app.Environment.IsDevelopment())
         {
-            var stringBuilder = new StringBuilder($"Количество слов: {crosswordWordDTOs.Count()}");
+            var stringBuilder = new StringBuilder($"Количество слов: {crossword.CrosswordWordDTOs.Count()}");
             for (int y = 0; y < crossword.Height; y++)
             {
                 stringBuilder.AppendLine();
@@ -770,7 +767,16 @@ app.MapGet("api/dictionaries/{dictionaryId}/generate_crossword", [Authorize(Role
             app.Logger.LogInformation(stringBuilder.ToString());
         }
 
-        return Results.Json(crosswordWordDTOs);
+        return Results.Json(crossword.CrosswordWordDTOs
+            .OrderBy(cwDTO => cwDTO.Name)
+            .Select(cwDTO => new
+            {
+                cwDTO.Id,
+                cwDTO.Name,
+                cwDTO.Definition,
+                cwDTO.P1,
+                cwDTO.P2
+            }));
     }
     catch (ArgumentException ex)
     {
