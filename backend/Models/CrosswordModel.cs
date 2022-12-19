@@ -8,7 +8,7 @@ namespace Crosswords.Models
 {
     public partial class CrosswordModel
     {
-        private IEnumerable<CrosswordWordDTO>? crosswordWordDTOs;
+        private IEnumerable<CrosswordWordDTO>? _crosswordWordDTOs;
 
 
         public int Width { get; }
@@ -18,8 +18,8 @@ namespace Crosswords.Models
         {
             get
             {
-                if (crosswordWordDTOs is not null)
-                    return crosswordWordDTOs;
+                if (_crosswordWordDTOs is not null)
+                    return _crosswordWordDTOs;
 
                 var dictionary = new Dictionary<int, CrosswordWordDTO>();
 
@@ -82,7 +82,7 @@ namespace Crosswords.Models
                 return dictionary
                     .Select(cwm => cwm.Value);
             }
-            private set => crosswordWordDTOs = value;
+            private set => _crosswordWordDTOs = value;
         }
         public IEnumerable<LetterDTO>? Letters { get; }
 

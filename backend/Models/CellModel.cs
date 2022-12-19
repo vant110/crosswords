@@ -4,7 +4,7 @@ namespace Crosswords.Models
 {
     public class CellModel
     {
-        private char input;
+        private char _input;
 
 
         public CellLockEnum Lock { get; set; }
@@ -17,15 +17,15 @@ namespace Crosswords.Models
 
         public char Input
         {
-            get => input;
+            get => _input;
             set
             {
-                input = value;
+                _input = value;
 
                 IsSolved = HWord is not null
-                    ? HWord.Name[HIndex] == input
+                    ? HWord.Name[HIndex] == _input
                     : VWord is not null
-                        ? VWord.Name[VIndex] == input
+                        ? VWord.Name[VIndex] == _input
                         : throw new Exception("Слово не найдено ни по горизонтали ни по вертикали");
             }
         }

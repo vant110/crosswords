@@ -5,15 +5,15 @@ namespace Crosswords.Models
 {
     public partial class MaskModel
     {
-        private string mask;
+        private string _mask;
 
 
         public string Full
         {
-            get => mask;
+            get => _mask;
             set
             {
-                mask = value;
+                _mask = value;
 
                 // Формируем шаблон
                 Left = null;
@@ -22,23 +22,23 @@ namespace Crosswords.Models
 
                 var patternBuilder = new StringBuilder("^");
 
-                var leftMatch = LeftRegex().Match(mask);
+                var leftMatch = LeftRegex().Match(_mask);
 
                 if (leftMatch.Success)
                 {
-                    Left = mask[..leftMatch.Length];
+                    Left = _mask[..leftMatch.Length];
                     patternBuilder.Append($".{{0,{leftMatch.Length}}}");
                 }
-                if (leftMatch.Length != mask.Length)
+                if (leftMatch.Length != _mask.Length)
                 {
-                    var rightMatch = RightRegex().Match(mask);
+                    var rightMatch = RightRegex().Match(_mask);
 
-                    Body = mask[leftMatch.Length..(mask.Length - rightMatch.Length)];
+                    Body = _mask[leftMatch.Length..(_mask.Length - rightMatch.Length)];
                     patternBuilder.Append($"({Body})");
 
                     if (rightMatch.Success)
                     {
-                        Right = mask[rightMatch.Index..];
+                        Right = _mask[rightMatch.Index..];
                         patternBuilder.Append($".{{0,{rightMatch.Length}}}");
                     }
                 }
