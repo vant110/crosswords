@@ -882,7 +882,7 @@ app.MapGet("api/crosswords/{id}/started", [Authorize(Roles = "player")] async (
         crossword.PromptCount,
         words = crossword.CrosswordWordDTOs
             .OrderBy(cwDTO => cwDTO.Definition),
-        grid = crossword.Letters
+        grid = crossword.LetterDTOs
     });
 });
 

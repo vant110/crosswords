@@ -84,7 +84,7 @@ namespace Crosswords.Models
             }
             private set => _crosswordWordDTOs = value;
         }
-        public IEnumerable<LetterDTO>? Letters { get; }
+        public IEnumerable<LetterDTO>? LetterDTOs { get; }
 
         public int PromptCount { get; set; }
         public bool IsStarted { get; set; }
@@ -136,13 +136,13 @@ namespace Crosswords.Models
         }
 
         public CrosswordModel(int width, int height, int promptCount, IEnumerable<CrosswordWordDTO> crosswordWordDTOs,
-            IEnumerable<LetterDTO> letters)
+            IEnumerable<LetterDTO> letterDTOs)
             : this(width, height, promptCount, crosswordWordDTOs)
         {
-            Letters = letters;
+            LetterDTOs = letterDTOs;
             IsStarted = true;
 
-            foreach (var l in Letters)
+            foreach (var l in LetterDTOs)
             {
                 Cells[l.X][l.Y].Input = l.L;
             }
