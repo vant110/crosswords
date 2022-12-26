@@ -5,4 +5,8 @@ import { Component } from '@angular/core';
   templateUrl: './reference.component.html',
   styleUrls: ['./reference.component.scss'],
 })
-export class ReferenceComponent {}
+export class ReferenceComponent {
+  openAboutSystem() {
+    window.open(`http://localhost:5062/about-system`, '_blank');
+  }
+}
